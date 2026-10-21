@@ -107,6 +107,16 @@ public class Task {
         this.deletedAt = deletedAt;
     }
 
+    public UUID getUuid()          { return uuid; }
+    public String getName()        { return name; }
+    public String getDescription() { return description; }
+    public TaskStatus getStatus()  { return status; }
+    public Instant getDeadline()   { return deadline; }
+    public Instant getFinishedAt() { return finishedAt; }
+    public Instant getCreatedAt()  { return createdAt; }
+    public Instant getUpdatedAt()  { return updatedAt; }
+    public Instant getDeletedAt()  { return deletedAt; }
+
     public void pending() { changeStatus(TaskStatus.PENDING); }
     public void start()   { changeStatus(TaskStatus.IN_PROGRESS); }
     public void cancel()  { changeStatus(TaskStatus.CANCELED); }
