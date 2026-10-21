@@ -530,4 +530,41 @@ class TaskTest {
             assertEquals(task.hashCode(), outra.hashCode());
         }
     }
+
+    @Nested
+    @DisplayName("toString")
+    class ToString {
+
+        @Test
+        @DisplayName("representa a tarefa com finishedAt e deletedAt nulos")
+        void representaCamposNulos() {
+            Task task = validTask();
+
+            assertEquals("Task{uuid=" + FIXED_UUID +
+                    ", name='Estudar'" +
+                    ", description='Revisar o capítulo'" +
+                    ", status=PENDING" +
+                    ", deadline=2026-01-02T10:00:00Z" +
+                    ", finishedAt=null" +
+                    ", createdAt=2026-01-01T10:00:00Z" +
+                    ", updatedAt=2026-01-01T10:00:30Z" +
+                    ", deletedAt=null}", task.toString());
+        }
+
+        @Test
+        @DisplayName("representa a tarefa com finishedAt e deletedAt preenchidos")
+        void representaCamposPreenchidos() {
+            Task task = new Task(FIXED_UUID, NAME, DESCRIPTION, TaskStatus.COMPLETED, DEADLINE, FINISHED_AT, CREATED_AT, UPDATED_AT, DELETED_AT);
+
+            assertEquals("Task{uuid=" + FIXED_UUID +
+                    ", name='Estudar'" +
+                    ", description='Revisar o capítulo'" +
+                    ", status=COMPLETED" +
+                    ", deadline=2026-01-02T10:00:00Z" +
+                    ", finishedAt=2026-01-01T10:01:00Z" +
+                    ", createdAt=2026-01-01T10:00:00Z" +
+                    ", updatedAt=2026-01-01T10:00:30Z" +
+                    ", deletedAt=2026-01-01T10:02:00Z}", task.toString());
+        }
+    }
 }
