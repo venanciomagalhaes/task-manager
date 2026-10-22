@@ -15,10 +15,7 @@ public class ShowTaskUseCase {
     }
 
     public Task handle(UUID uuid){
-        Optional<Task> optionalTask = this.taskRepository.findByUuid(uuid);
-        if (optionalTask.isEmpty()){
-            throw new TaskNotFoundException("Não foi possível encontrar a task " + uuid.toString());
-        }
-        return optionalTask.get();
+        return this.taskRepository.findByUuid(uuid)
+                .orElseThrow(() -> new TaskNotFoundException(uuid));
     }
 }

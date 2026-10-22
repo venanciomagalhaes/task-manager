@@ -16,11 +16,8 @@ public class DeleteTaskUseCase {
     }
 
     public void handle(UUID uuid){
-        Optional<Task> optionalTask = this.taskRepository.findByUuid(uuid);
-        if (optionalTask.isEmpty()){
-            throw new TaskNotFoundException("Não foi possível encontrar a task " + uuid.toString());
-        }
-        Task task = optionalTask.get();
+        Task task = this.taskRepository.findByUuid(uuid)
+                .orElseThrow(() -> new TaskNotFoundException(uuid));
         task.delete();
         this.taskRepository.save(task);
     }

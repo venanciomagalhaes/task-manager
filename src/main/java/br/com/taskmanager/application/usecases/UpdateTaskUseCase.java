@@ -17,13 +17,9 @@ public class UpdateTaskUseCase {
     }
 
     public Task handle(UUID uuid, UpdateTaskDto dto){
-        Optional<Task> optionalTask = this.taskRepository.findByUuid(uuid);
-        if (optionalTask.isEmpty()){
-            throw new TaskNotFoundException("Não foi possível encontrar a task " + uuid.toString());
-        }
-        Task task = optionalTask.get();
+        Task task = this.taskRepository.findByUuid(uuid)
+                .orElseThrow(() -> new TaskNotFoundException(uuid));
         task.update(dto.name(), dto.description(), dto.status(), dto.deadline());
-
         return this.taskRepository.save(task);
     }
 }
