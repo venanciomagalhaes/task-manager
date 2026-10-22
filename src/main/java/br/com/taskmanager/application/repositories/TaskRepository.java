@@ -1,7 +1,5 @@
 package br.com.taskmanager.application.repositories;
 
-import br.com.taskmanager.application.dtos.CreateTaskDto;
-import br.com.taskmanager.application.dtos.UpdateTaskDto;
 import br.com.taskmanager.domain.entities.Task;
 
 import java.util.List;
