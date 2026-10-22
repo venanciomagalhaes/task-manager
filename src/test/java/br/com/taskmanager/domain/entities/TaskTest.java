@@ -52,12 +52,7 @@ class TaskTest {
     }
 
     private static void apply(Task task, TaskStatus to) {
-        switch (to) {
-            case PENDING -> task.pending();
-            case IN_PROGRESS -> task.start();
-            case CANCELED -> task.cancel();
-            case COMPLETED -> task.finish();
-        }
+        task.transitionTo(to);
     }
 
     private static void assertNotBefore(Instant minimum, Instant actual) {
@@ -363,15 +358,17 @@ class TaskTest {
 
         @ParameterizedTest(name = "[{index}] status = {0}")
         @EnumSource(TaskStatus.class)
-        @DisplayName("não deve alterar para o mesmo status e mantém updatedAt")
-        void rejeitaStatusRepetido(TaskStatus status) {
+        @DisplayName("ignora transição para o mesmo status e preserva timestamps")
+        void ignoraStatusRepetido(TaskStatus status) {
             Task task = taskWithStatus(status);
+            Instant updatedAtAntes = task.getUpdatedAt();
+            Instant finishedAtAntes = task.getFinishedAt();
 
-            ValidationException ex = assertThrows(ValidationException.class, () -> apply(task, status));
+            apply(task, status);
 
-            assertEquals("A tarefa já está com o status " + status, ex.getMessage());
             assertEquals(status, task.getStatus());
-            assertEquals(UPDATED_AT, task.getUpdatedAt());
+            assertEquals(updatedAtAntes, task.getUpdatedAt());
+            assertEquals(finishedAtAntes, task.getFinishedAt());
         }
 
         @Test
@@ -380,7 +377,7 @@ class TaskTest {
             Task task = validTask();
             Instant before = Instant.now();
 
-            task.start();
+            apply(task, TaskStatus.IN_PROGRESS);
 
             assertEquals(TaskStatus.IN_PROGRESS, task.getStatus());
             assertNotBefore(before, task.getUpdatedAt());
@@ -393,7 +390,7 @@ class TaskTest {
             Task task = validTask();
             Instant before = Instant.now();
 
-            task.finish();
+            apply(task, TaskStatus.COMPLETED);
 
             assertEquals(TaskStatus.COMPLETED, task.getStatus());
             assertEquals(task.getUpdatedAt(), task.getFinishedAt());
@@ -404,9 +401,9 @@ class TaskTest {
         @DisplayName("sair de COMPLETED limpa finishedAt")
         void sairDeCompletedLimpaFinishedAt() {
             Task task = validTask();
-            task.finish();
+            apply(task, TaskStatus.COMPLETED);
 
-            task.start();
+            apply(task, TaskStatus.IN_PROGRESS);
 
             assertEquals(TaskStatus.IN_PROGRESS, task.getStatus());
             assertNull(task.getFinishedAt());
@@ -416,9 +413,9 @@ class TaskTest {
         @DisplayName("reabre tarefa CANCELED")
         void reabreTarefaCanceled() {
             Task task = validTask();
-            task.cancel();
+            apply(task, TaskStatus.CANCELED);
 
-            task.pending();
+            apply(task, TaskStatus.PENDING);
 
             assertEquals(TaskStatus.PENDING, task.getStatus());
             assertNull(task.getFinishedAt());
@@ -483,7 +480,7 @@ class TaskTest {
             task.delete();
             task.restore();
 
-            task.start();
+            apply(task, TaskStatus.IN_PROGRESS);
 
             assertEquals(TaskStatus.IN_PROGRESS, task.getStatus());
             assertNull(task.getDeletedAt());
