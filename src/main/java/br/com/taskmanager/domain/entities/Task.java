@@ -19,6 +19,46 @@ public class Task {
     private Instant updatedAt;
     private Instant deletedAt;
 
+    public static Task create(String name, String description, Instant deadline){
+        Instant now = Instant.now();
+        return new Task(
+                UUID.randomUUID(),
+                name,
+                description,
+                TaskStatus.PENDING,
+                deadline,
+                null,
+                now,
+                now,
+                null
+        );
+    }
+
+    public void update(String name, String description, TaskStatus status, Instant deadline) {
+        this.rename(name);
+        this.changeDescription(description);
+        this.reschedule(deadline);
+        this.transitionTo(status);
+    }
+
+    public void rename(String name) {
+        ensureNotDeleted();
+        this.setName(name);
+        this.updatedAt = Instant.now();
+    }
+
+    public void changeDescription(String description) {
+        ensureNotDeleted();
+        this.setDescription(description);
+        this.updatedAt = Instant.now();
+    }
+
+    public void reschedule(Instant deadline) {
+        ensureNotDeleted();
+        this.setDeadline(deadline);
+        this.updatedAt = Instant.now();
+    }
+
     public Task(UUID uuid, String name, String description, TaskStatus status, Instant deadline,
                 Instant finishedAt, Instant createdAt, Instant updatedAt, Instant deletedAt) {
         this.setUuid(uuid);
@@ -117,12 +157,7 @@ public class Task {
     public Instant getUpdatedAt()  { return updatedAt; }
     public Instant getDeletedAt()  { return deletedAt; }
 
-    public void pending() { changeStatus(TaskStatus.PENDING); }
-    public void start()   { changeStatus(TaskStatus.IN_PROGRESS); }
-    public void cancel()  { changeStatus(TaskStatus.CANCELED); }
-    public void finish()  { changeStatus(TaskStatus.COMPLETED); }
-
-    private void changeStatus(TaskStatus next) {
+    public void transitionTo(TaskStatus next) {
         if (next == null) {
             throw new ValidationException("O novo status é obrigatório");
         }
@@ -130,7 +165,7 @@ public class Task {
             throw new ValidationException("Não é possível alterar o status de uma tarefa deletada. Restaure a tarefa antes.");
         }
         if (this.status == next) {
-            throw new ValidationException("A tarefa já está com o status " + next);
+            return;
         }
         Instant now = Instant.now();
         this.status = next;
@@ -153,6 +188,12 @@ public class Task {
         }
         this.deletedAt = null;
         this.updatedAt = Instant.now();
+    }
+
+    private void ensureNotDeleted() {
+        if (this.deletedAt != null) {
+            throw new ValidationException("Não é possível alterar uma tarefa deletada. Restaure a tarefa antes.");
+        }
     }
 
     @Override
