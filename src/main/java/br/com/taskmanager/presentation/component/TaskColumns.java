@@ -3,11 +3,14 @@ package br.com.taskmanager.presentation.component;
 import br.com.taskmanager.domain.entities.Task;
 import br.com.taskmanager.domain.enums.TaskStatus;
 import br.com.taskmanager.presentation.util.InstantConverter;
+import br.com.taskmanager.presentation.viewmodel.CompletionTiming;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.geometry.Pos;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
+import javafx.scene.layout.VBox;
 
 import java.time.Instant;
 import java.util.function.Function;
@@ -81,6 +84,41 @@ public final class TaskColumns {
             }
         });
         column.setPrefWidth(160);
+        return column;
+    }
+
+    public static TableColumn<Task, Task> finishedAt(InstantConverter converter) {
+        TableColumn<Task, Task> column = new TableColumn<>("Finalizada em");
+        column.getStyleClass().add("column-center");
+        column.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
+        column.setCellFactory(ignored -> new TableCell<>() {
+            private final Label date = new Label();
+            private final Label badge = new Label();
+            private final VBox content = new VBox(2, date, badge);
+
+            {
+                setAlignment(Pos.CENTER);
+                content.setAlignment(Pos.CENTER);
+                date.getStyleClass().add("finished-date");
+                badge.getStyleClass().add("timing-badge");
+            }
+
+            @Override
+            protected void updateItem(Task task, boolean empty) {
+                super.updateItem(task, empty);
+                if (empty || task == null || task.getFinishedAt() == null) {
+                    setGraphic(null);
+                    return;
+                }
+                CompletionTiming timing = CompletionTiming.of(task);
+                date.setText(converter.format(task.getFinishedAt()));
+                badge.setText(timing.label());
+                badge.getStyleClass().removeAll("timing-on-time", "timing-late");
+                badge.getStyleClass().add(timing.styleClass());
+                setGraphic(content);
+            }
+        });
+        column.setPrefWidth(190);
         return column;
     }
 }

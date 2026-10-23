@@ -87,7 +87,7 @@ public final class TrashController {
                 TaskColumns.name(),
                 TaskColumns.status(),
                 TaskColumns.date("Prazo", Task::getDeadline, converter),
-                TaskColumns.date("Finalizada em", Task::getFinishedAt, converter),
+                TaskColumns.finishedAt(converter),
                 TaskColumns.date("Excluída em", Task::getDeletedAt, converter)
         );
         table.setPlaceholder(new Label("A lixeira está vazia."));

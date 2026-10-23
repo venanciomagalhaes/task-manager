@@ -135,7 +135,7 @@ public final class TaskListController {
                 TaskColumns.name(),
                 TaskColumns.status(),
                 TaskColumns.date("Prazo", Task::getDeadline, converter),
-                TaskColumns.date("Finalizada em", Task::getFinishedAt, converter),
+                TaskColumns.finishedAt(converter),
                 TaskColumns.date("Criada em", Task::getCreatedAt, converter)
         );
         table.setPlaceholder(new Label("Nenhuma tarefa encontrada."));
