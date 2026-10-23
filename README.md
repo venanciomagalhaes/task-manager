@@ -31,8 +31,10 @@ docker compose up -d
 A aplicação abre com três áreas bem separadas na barra lateral:
 
 - **Listar tarefas**: busca, filtro por status, detalhes e ações (editar, iniciar, concluir, cancelar, excluir).
-- **Nova tarefa**: formulário de criação com validação.
+- **Nova tarefa**: formulário de criação com validação e prazo no formato `dd/MM/aaaa`.
 - **Tarefas excluídas**: lixeira com restauração.
+
+A janela abre maximizada. Pressione `F11` para alternar a tela cheia e `Esc` para sair dela.
 
 ## Testes
 
