@@ -272,20 +272,12 @@
     -fx-background-color: #ffffff;
 }
 
-.table-row-cell.row-pending {
-    -fx-background-color: #fffbeb;
-}
-
-.table-row-cell.row-in-progress {
-    -fx-background-color: #eff6ff;
-}
-
 .table-row-cell.row-completed {
     -fx-background-color: #f0fdf4;
 }
 
-.table-row-cell.row-canceled {
-    -fx-background-color: #f9fafb;
+.table-row-cell.row-overdue {
+    -fx-background-color: #fef2f2;
 }
 
 .table-row-cell:filled:selected {

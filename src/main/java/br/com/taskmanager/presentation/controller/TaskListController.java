@@ -14,6 +14,9 @@ import br.com.taskmanager.presentation.service.FxRunner;
 import br.com.taskmanager.presentation.util.InstantConverter;
 import br.com.taskmanager.presentation.viewmodel.StatusFilter;
 import br.com.taskmanager.presentation.viewmodel.TaskListViewModel;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -26,6 +29,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import java.util.function.Consumer;
 
@@ -52,6 +56,7 @@ public final class TaskListController {
     private final Button refreshButton = new Button("Atualizar");
     private final Button newButton = new Button("Nova tarefa");
     private final VBox root = new VBox(16);
+    private final Timeline overdueRefresh = new Timeline(new KeyFrame(Duration.seconds(30), event -> table.refresh()));
 
     private boolean busy;
 
@@ -178,6 +183,10 @@ public final class TaskListController {
         root.getChildren().addAll(title, subtitle, toolbar, center);
         root.getStyleClass().add("content");
         VBox.setVgrow(center, Priority.ALWAYS);
+
+        Timeline overdueRefresh = new Timeline(new KeyFrame(Duration.seconds(30), event -> table.refresh()));
+        overdueRefresh.setCycleCount(Animation.INDEFINITE);
+        overdueRefresh.play();
 
         onSelectionChanged(null);
     }
