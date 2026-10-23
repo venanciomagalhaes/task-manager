@@ -17,7 +17,7 @@ public class MySqlTaskRepository implements TaskRepository {
 
     private final DataSource dataSource;
 
-    public MySqlTaskRepository(DataSource dataSource){
+    public MySqlTaskRepository(DataSource dataSource) {
         this.dataSource = dataSource;
     }
 
@@ -26,13 +26,13 @@ public class MySqlTaskRepository implements TaskRepository {
         String sql = "SELECT * FROM tasks WHERE uuid = ?;";
         try (Connection connection = this.dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-           statement.setString(1, uuid.toString());
-           try (ResultSet resultSet = statement.executeQuery()) {
-               return resultSet.next() ?  Optional.of(this.mapRow(resultSet)) : Optional.empty();
-           }
-       }catch (SQLException throwable){
+            statement.setString(1, uuid.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? Optional.of(this.mapRow(resultSet)) : Optional.empty();
+            }
+        } catch (SQLException throwable) {
             throw new QueryException("Não foi possível buscar a task de uuid " + uuid.toString(), throwable);
-       }
+        }
     }
 
     @Override
@@ -44,12 +44,12 @@ public class MySqlTaskRepository implements TaskRepository {
              Statement statement = connection.createStatement()) {
             try (ResultSet resultSet = statement.executeQuery(sql)) {
                 List<Task> tasks = new ArrayList<>();
-                while (resultSet.next()){
+                while (resultSet.next()) {
                     tasks.add(this.mapRow(resultSet));
                 }
-               return tasks;
+                return tasks;
             }
-        }catch (SQLException throwable){
+        } catch (SQLException throwable) {
             throw new QueryException("Não foi possível listar todas as tasks", throwable);
         }
     }

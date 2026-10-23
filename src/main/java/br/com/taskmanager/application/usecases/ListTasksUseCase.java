@@ -9,7 +9,7 @@ public class ListTasksUseCase {
 
     private final TaskRepository taskRepository;
 
-    public ListTasksUseCase(TaskRepository repository){
+    public ListTasksUseCase(TaskRepository repository) {
         this.taskRepository = repository;
     }
 

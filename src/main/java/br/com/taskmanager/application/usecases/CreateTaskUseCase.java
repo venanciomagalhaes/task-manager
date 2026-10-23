@@ -8,7 +8,7 @@ public class CreateTaskUseCase {
 
     private final TaskRepository taskRepository;
 
-    public CreateTaskUseCase(TaskRepository repository){
+    public CreateTaskUseCase(TaskRepository repository) {
         this.taskRepository = repository;
     }
 
