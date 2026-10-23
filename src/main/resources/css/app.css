@@ -258,6 +258,10 @@
     -fx-alignment: CENTER_LEFT;
 }
 
+.table-view .column-header.column-center .label {
+    -fx-alignment: CENTER;
+}
+
 .table-row-cell {
     -fx-background-color: #ffffff;
     -fx-border-color: transparent transparent #f1f5f9 transparent;

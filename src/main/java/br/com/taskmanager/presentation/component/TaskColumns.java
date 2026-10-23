@@ -37,6 +37,7 @@ public final class TaskColumns {
 
     public static TableColumn<Task, TaskStatus> status() {
         TableColumn<Task, TaskStatus> column = new TableColumn<>("Status");
+        column.getStyleClass().add("column-center");
         column.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getStatus()));
         column.setCellFactory(ignored -> new TableCell<>() {
             private final StatusBadge badge = new StatusBadge();
@@ -66,6 +67,7 @@ public final class TaskColumns {
             InstantConverter converter
     ) {
         TableColumn<Task, Instant> column = new TableColumn<>(title);
+        column.getStyleClass().add("column-center");
         column.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(extractor.apply(data.getValue())));
         column.setCellFactory(ignored -> new TableCell<>() {
             {
