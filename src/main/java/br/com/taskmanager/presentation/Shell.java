@@ -12,6 +12,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -75,6 +77,7 @@ public final class Shell {
 
     public void show() {
         stage.show();
+        stage.setMaximized(true);
         showTasks();
     }
 
@@ -97,6 +100,8 @@ public final class Shell {
         stage.setTitle("Task Manager");
         stage.setMinWidth(1000);
         stage.setMinHeight(680);
+        stage.setFullScreenExitHint("Pressione Esc para sair da tela cheia");
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.F11), this::toggleFullScreen);
     }
 
     private VBox buildSidebar() {
@@ -122,10 +127,19 @@ public final class Shell {
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
+        Button fullscreenButton = new Button("Tela cheia (F11)");
+        fullscreenButton.getStyleClass().add("nav-button");
+        fullscreenButton.setMaxWidth(Double.MAX_VALUE);
+        fullscreenButton.setAlignment(Pos.CENTER_LEFT);
+        fullscreenButton.setOnAction(event -> toggleFullScreen());
+        stage.fullScreenProperty().addListener((observable, oldValue, active) ->
+                fullscreenButton.setText(active ? "Sair da tela cheia" : "Tela cheia (F11)"));
+
         Label footer = new Label("JavaFX • MySQL");
         footer.getStyleClass().add("sidebar-footer");
 
-        VBox sidebar = new VBox(6, brand, tasksSection, listButton, newButton, trashSection, trashButton, spacer, footer);
+        VBox sidebar = new VBox(6, brand, tasksSection, listButton, newButton, trashSection, trashButton,
+                spacer, fullscreenButton, footer);
         sidebar.getStyleClass().add("sidebar");
         sidebar.setPrefWidth(230);
         sidebar.setMinWidth(230);
@@ -187,5 +201,9 @@ public final class Shell {
                 button.getStyleClass().add("active");
             }
         });
+    }
+
+    private void toggleFullScreen() {
+        stage.setFullScreen(!stage.isFullScreen());
     }
 }
