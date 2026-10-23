@@ -14,8 +14,9 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -54,12 +55,21 @@ class MySqlTaskRepositoryTest {
     @BeforeAll
     static void beforeAll() throws Exception {
         connection = DriverManager.getConnection(MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword());
-        String ddl = Files.readString(Path.of(
-                "src/main/java/br/com/taskmanager/infrastructure/migrations/V1__create_tasks.sql"));
+        String ddl = readMigration();
         try (Statement statement = connection.createStatement()) {
             statement.execute(ddl);
         }
         dataSource = dataSource();
+    }
+
+    private static String readMigration() throws IOException {
+        try (InputStream stream = MySqlTaskRepositoryTest.class.getClassLoader()
+                .getResourceAsStream("db/migration/V1__create_tasks.sql")) {
+            if (stream == null) {
+                throw new IllegalStateException("Migration db/migration/V1__create_tasks.sql não encontrada no classpath");
+            }
+            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
 
     @AfterAll
