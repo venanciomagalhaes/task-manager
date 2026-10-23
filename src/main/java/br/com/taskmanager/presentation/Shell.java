@@ -157,7 +157,7 @@ public final class Shell {
     }
 
     private HBox buildStatusBar() {
-        Circle dot = new Circle(4, Color.web("#34d399"));
+        Circle dot = new Circle(4, Color.web("#22c55e"));
         Label database = new Label("MySQL conectado");
         Label hint = new Label("Duplo clique edita • Selecione uma tarefa para ver os detalhes");
 

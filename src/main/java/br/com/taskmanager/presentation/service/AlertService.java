@@ -6,12 +6,9 @@ import br.com.taskmanager.infrastructure.exceptions.InfrastructureException;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 
-import java.net.URL;
-
 public final class AlertService {
 
     private static final String TITLE = "Task Manager";
-    private static final String STYLESHEET = "/css/app.css";
 
     public void showError(Throwable error) {
         if (error instanceof DomainException || error instanceof ApplicationException) {
@@ -36,7 +33,6 @@ public final class AlertService {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION, content, ButtonType.OK, ButtonType.CANCEL);
         alert.setTitle(TITLE);
         alert.setHeaderText(header);
-        applyTheme(alert);
         return alert.showAndWait().filter(ButtonType.OK::equals).isPresent();
     }
 
@@ -45,14 +41,6 @@ public final class AlertService {
         alert.setTitle(TITLE);
         alert.setHeaderText(header);
         alert.setContentText(content);
-        applyTheme(alert);
         alert.showAndWait();
-    }
-
-    private void applyTheme(Alert alert) {
-        URL stylesheet = AlertService.class.getResource(STYLESHEET);
-        if (stylesheet != null) {
-            alert.getDialogPane().getStylesheets().add(stylesheet.toExternalForm());
-        }
     }
 }
