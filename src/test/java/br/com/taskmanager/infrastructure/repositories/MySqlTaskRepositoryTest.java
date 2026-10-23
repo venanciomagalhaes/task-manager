@@ -3,6 +3,8 @@ package br.com.taskmanager.infrastructure.repositories;
 import br.com.taskmanager.domain.entities.Task;
 import br.com.taskmanager.domain.enums.TaskStatus;
 import br.com.taskmanager.infrastructure.exceptions.QueryException;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +48,7 @@ class MySqlTaskRepositoryTest {
             .withUrlParam("connectionTimeZone", "UTC");
 
     private static Connection connection;
+    private static HikariDataSource dataSource;
     private MySqlTaskRepository repository;
 
     @BeforeAll
@@ -56,10 +59,14 @@ class MySqlTaskRepositoryTest {
         try (Statement statement = connection.createStatement()) {
             statement.execute(ddl);
         }
+        dataSource = dataSource();
     }
 
     @AfterAll
     static void afterAll() throws Exception {
+        if (dataSource != null) {
+            dataSource.close();
+        }
         if (connection != null) {
             connection.close();
         }
@@ -70,7 +77,7 @@ class MySqlTaskRepositoryTest {
         try (Statement statement = connection.createStatement()) {
             statement.execute("TRUNCATE TABLE tasks");
         }
-        repository = new MySqlTaskRepository(connection);
+        repository = new MySqlTaskRepository(dataSource);
     }
 
     @Test
@@ -234,12 +241,11 @@ class MySqlTaskRepositoryTest {
     }
 
     @Test
-    @DisplayName("lança QueryException quando a conexão está fechada")
-    void lancaQueryExceptionComConexaoFechada() throws Exception {
-        Connection closedConnection = DriverManager.getConnection(
-                MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword());
-        closedConnection.close();
-        MySqlTaskRepository failingRepository = new MySqlTaskRepository(closedConnection);
+    @DisplayName("lança QueryException quando o DataSource está fechado")
+    void lancaQueryExceptionComDataSourceFechado() {
+        HikariDataSource closedDataSource = dataSource();
+        closedDataSource.close();
+        MySqlTaskRepository failingRepository = new MySqlTaskRepository(closedDataSource);
         UUID uuid = UUID.randomUUID();
 
         QueryException findByUuidError = assertThrows(QueryException.class,
@@ -248,6 +254,27 @@ class MySqlTaskRepositoryTest {
         assertThrows(QueryException.class, () -> failingRepository.getAll(false));
         assertThrows(QueryException.class,
                 () -> failingRepository.save(task(uuid, "nome", TaskStatus.PENDING, null, null)));
+    }
+
+    @Test
+    @DisplayName("devolve a conexão ao pool entre as operações")
+    void devolveConexaoAoPool() {
+        UUID uuid = UUID.randomUUID();
+        repository.save(task(uuid, "primeira", TaskStatus.PENDING, null, null));
+
+        assertEquals(1, repository.getAll(false).size());
+        assertTrue(repository.findByUuid(uuid).isPresent());
+        assertEquals(1, repository.getAll(true).size());
+    }
+
+    private static HikariDataSource dataSource() {
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(MYSQL.getJdbcUrl());
+        config.setUsername(MYSQL.getUsername());
+        config.setPassword(MYSQL.getPassword());
+        config.setMaximumPoolSize(1);
+        config.setConnectionTimeout(2000);
+        return new HikariDataSource(config);
     }
 
     private Task task(UUID uuid, String name, TaskStatus status, Instant finishedAt, Instant deletedAt) {
