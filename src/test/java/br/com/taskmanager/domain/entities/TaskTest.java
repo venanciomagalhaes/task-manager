@@ -200,11 +200,42 @@ class TaskTest {
         }
 
         @Test
-        @DisplayName("preserva espaços nas pontas do name")
-        void preservaEspacosNasPontasDoName() {
+        @DisplayName("remove espaços nas pontas do name")
+        void removeEspacosNasPontasDoName() {
             Task task = new Task(FIXED_UUID, " Estudar ", DESCRIPTION, TaskStatus.PENDING, DEADLINE, null, CREATED_AT, UPDATED_AT, null);
 
-            assertEquals(" Estudar ", task.getName());
+            assertEquals("Estudar", task.getName());
+        }
+
+        @Test
+        @DisplayName("valida o limite de 255 caracteres após o trim")
+        void validaLimiteAposTrim() {
+            String name = " " + "a".repeat(255) + " ";
+
+            Task task = new Task(FIXED_UUID, name, DESCRIPTION, TaskStatus.PENDING, DEADLINE, null, CREATED_AT, UPDATED_AT, null);
+
+            assertEquals("a".repeat(255), task.getName());
+        }
+    }
+
+    @Nested
+    @DisplayName("Normalização de description")
+    class Descricao {
+
+        @Test
+        @DisplayName("remove espaços nas pontas da description")
+        void removeEspacosNasPontasDaDescription() {
+            Task task = new Task(FIXED_UUID, NAME, "  revisar o capítulo  ", TaskStatus.PENDING, DEADLINE, null, CREATED_AT, UPDATED_AT, null);
+
+            assertEquals("revisar o capítulo", task.getDescription());
+        }
+
+        @Test
+        @DisplayName("description em branco vira nula")
+        void descriptionEmBrancoViraNula() {
+            Task task = new Task(FIXED_UUID, NAME, "   ", TaskStatus.PENDING, DEADLINE, null, CREATED_AT, UPDATED_AT, null);
+
+            assertNull(task.getDescription());
         }
     }
 

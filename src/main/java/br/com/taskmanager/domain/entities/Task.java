@@ -104,17 +104,26 @@ public class Task {
     }
 
     private void setName(String name) {
-        if (name == null || name.isBlank()) {
+        if (name == null) {
             throw new ValidationException("O campo name é obrigatório e não pode estar em branco");
         }
-        if (name.length() > 255) {
+        String normalized = name.trim();
+        if (normalized.isEmpty()) {
+            throw new ValidationException("O campo name é obrigatório e não pode estar em branco");
+        }
+        if (normalized.length() > 255) {
             throw new ValidationException("O campo name deve ter no máximo 255 caracteres");
         }
-        this.name = name;
+        this.name = normalized;
     }
 
     private void setDescription(String description) {
-        this.description = description;
+        if (description == null) {
+            this.description = null;
+            return;
+        }
+        String normalized = description.trim();
+        this.description = normalized.isEmpty() ? null : normalized;
     }
 
     private void setStatus(TaskStatus status) {
