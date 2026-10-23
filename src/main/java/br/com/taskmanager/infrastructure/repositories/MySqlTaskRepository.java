@@ -5,6 +5,7 @@ import br.com.taskmanager.domain.entities.Task;
 import br.com.taskmanager.domain.enums.TaskStatus;
 import br.com.taskmanager.infrastructure.exceptions.QueryException;
 
+import javax.sql.DataSource;
 import java.sql.*;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -14,16 +15,17 @@ import java.util.UUID;
 
 public class MySqlTaskRepository implements TaskRepository {
 
-    private final Connection connection;
+    private final DataSource dataSource;
 
-    public MySqlTaskRepository(Connection connection){
-        this.connection = connection;
+    public MySqlTaskRepository(DataSource dataSource){
+        this.dataSource = dataSource;
     }
 
     @Override
     public Optional<Task> findByUuid(UUID uuid) {
         String sql = "SELECT * FROM tasks WHERE uuid = ?;";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = this.dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
            statement.setString(1, uuid.toString());
            try (ResultSet resultSet = statement.executeQuery()) {
                return resultSet.next() ?  Optional.of(this.mapRow(resultSet)) : Optional.empty();
@@ -38,7 +40,8 @@ public class MySqlTaskRepository implements TaskRepository {
         String sql = withTrashed
                 ? "SELECT * FROM tasks ORDER BY deadline;"
                 : "SELECT * FROM tasks WHERE deleted_at IS NULL ORDER BY deadline;";
-        try (Statement statement = connection.createStatement()) {
+        try (Connection connection = this.dataSource.getConnection();
+             Statement statement = connection.createStatement()) {
             try (ResultSet resultSet = statement.executeQuery(sql)) {
                 List<Task> tasks = new ArrayList<>();
                 while (resultSet.next()){
@@ -67,7 +70,8 @@ public class MySqlTaskRepository implements TaskRepository {
                  deleted_at = new.deleted_at
         """;
 
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = this.dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, task.getUuid().toString());
             statement.setString(2, task.getName());
             statement.setString(3, task.getDescription());
