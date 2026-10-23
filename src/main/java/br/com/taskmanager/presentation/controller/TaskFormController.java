@@ -16,6 +16,7 @@ import br.com.taskmanager.presentation.util.InstantConverter;
 import br.com.taskmanager.presentation.util.LocalDateConverter;
 import br.com.taskmanager.presentation.util.StatusText;
 import br.com.taskmanager.presentation.viewmodel.TaskFormViewModel;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -24,10 +25,9 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
@@ -51,7 +51,7 @@ public final class TaskFormController {
     private final LocalDateConverter dateConverter = new LocalDateConverter();
     private final TextField timeField = new TextField();
     private final ComboBox<TaskStatus> statusBox = new ComboBox<>();
-    private final Label statusLabel = new Label("Status *");
+    private VBox statusField;
     private final Label errorLabel = new Label();
     private final Label titleLabel = new Label();
     private final Label subtitleLabel = new Label();
@@ -126,9 +126,11 @@ public final class TaskFormController {
         subtitleLabel.getStyleClass().add("page-subtitle");
 
         nameField.setPromptText("Ex.: Revisar proposta do cliente");
+        nameField.setMaxWidth(Double.MAX_VALUE);
         descriptionField.setPromptText("Detalhes opcionais da tarefa");
-        descriptionField.setPrefRowCount(5);
+        descriptionField.setPrefRowCount(8);
         descriptionField.setWrapText(true);
+        descriptionField.setMaxHeight(Double.MAX_VALUE);
 
         deadlinePicker.setPrefWidth(190);
         deadlinePicker.setConverter(dateConverter);
@@ -155,25 +157,16 @@ public final class TaskFormController {
         HBox deadlineBox = new HBox(8, deadlinePicker, timeField);
         deadlineBox.setAlignment(Pos.CENTER_LEFT);
 
-        GridPane grid = new GridPane();
-        grid.setHgap(16);
-        grid.setVgap(14);
-        grid.add(formLabel("Nome *"), 0, 0);
-        grid.add(nameField, 1, 0);
-        grid.add(formLabel("Descrição"), 0, 1);
-        grid.add(descriptionField, 1, 1);
-        grid.add(formLabel("Prazo *"), 0, 2);
-        grid.add(deadlineBox, 1, 2);
-        grid.add(statusLabel, 0, 3);
-        grid.add(statusBox, 1, 3);
-        statusLabel.getStyleClass().add("form-label");
+        VBox nameFieldBox = field("Nome *", nameField);
+        VBox deadlineFieldBox = field("Prazo *", deadlineBox);
+        statusField = field("Status *", statusBox);
+        HBox metadataRow = new HBox(24, deadlineFieldBox, statusField);
+        HBox.setHgrow(deadlineFieldBox, Priority.ALWAYS);
+        HBox.setHgrow(statusField, Priority.ALWAYS);
 
-        ColumnConstraints labels = new ColumnConstraints();
-        labels.setMinWidth(120);
-        ColumnConstraints fields = new ColumnConstraints();
-        fields.setHgrow(Priority.ALWAYS);
-        fields.setFillWidth(true);
-        grid.getColumnConstraints().addAll(labels, fields);
+        VBox descriptionFieldBox = field("Descrição", descriptionField);
+        VBox.setVgrow(descriptionFieldBox, Priority.ALWAYS);
+        VBox.setVgrow(descriptionField, Priority.ALWAYS);
 
         errorLabel.getStyleClass().add("error-label");
         errorLabel.setWrapText(true);
@@ -189,13 +182,16 @@ public final class TaskFormController {
         HBox buttons = new HBox(8, cancelButton, saveButton);
         buttons.setAlignment(Pos.CENTER_RIGHT);
 
-        VBox card = new VBox(18, titleLabel, subtitleLabel, grid, errorLabel, buttons);
+        VBox card = new VBox(18, titleLabel, subtitleLabel, nameFieldBox, metadataRow,
+                descriptionFieldBox, errorLabel, buttons);
         card.getStyleClass().add("card");
-        card.setMaxWidth(780);
+        card.setPadding(new Insets(24, 28, 24, 28));
+        VBox.setVgrow(card, Priority.ALWAYS);
 
         root.getChildren().add(card);
         root.getStyleClass().add("content");
         root.setAlignment(Pos.TOP_LEFT);
+        root.setFillWidth(true);
     }
 
     private void applyViewModel() {
@@ -281,10 +277,8 @@ public final class TaskFormController {
     }
 
     private void setStatusVisible(boolean visible) {
-        statusLabel.setVisible(visible);
-        statusLabel.setManaged(visible);
-        statusBox.setVisible(visible);
-        statusBox.setManaged(visible);
+        statusField.setVisible(visible);
+        statusField.setManaged(visible);
     }
 
     private void setBusy(boolean busy) {
@@ -301,5 +295,12 @@ public final class TaskFormController {
         Label label = new Label(text);
         label.getStyleClass().add("form-label");
         return label;
+    }
+
+    private VBox field(String label, Region control) {
+        control.setMaxWidth(Double.MAX_VALUE);
+        VBox box = new VBox(6, formLabel(label), control);
+        box.setFillWidth(true);
+        return box;
     }
 }
