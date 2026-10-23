@@ -4,13 +4,25 @@
 
 ## Contexto e autoria
 
-Este foi o meu **primeiro projeto em Java**. O objetivo foi aprender na prática o que sustenta uma aplicação de verdade: modelagem de domínio, separação de camadas, persistência, testes de integração e interface desktop.
+O objetivo deste projeto foi construir uma aplicação completa — domínio, persistência, testes e interface desktop — e exercitar decisões de engenharia de ponta a ponta.
 
-Usei **IA como ferramenta de desenvolvimento durante todo o processo**, com participação mais intensa na camada de **interface com JavaFX** — estrutura das telas, componentes, CSS e ajustes de layout. As decisões de escopo, arquitetura, modelagem do domínio, regras de negócio, escolha de tecnologias, priorização e revisão do código foram **minhas**. A IA acelerou a execução; o julgamento e a responsabilidade pelo resultado também são meus.
+Conduzi o desenvolvimento com **SDD (Spec-Driven Development)**: defini o problema, os contratos e os critérios de aceite antes de implementar; avancei por camadas, com testes como critério de conclusão.
 
-Não escondo o uso de IA — faz parte do meu processo. O que este projeto demonstra é a capacidade de **dirigir, revisar e integrar** código, não apenas gerá-lo. A construção foi incremental: commits por camada, testes a cada etapa e revisão do que entrava no projeto.
+A IA foi usada como apoio em três frentes: **interface JavaFX** (telas, componentes e CSS), **testes** (unitários e de integração) e **CI/CD** (GitHub Actions). As decisões de arquitetura, modelagem do domínio, regras de negócio, persistência, priorização e revisão do código foram minhas.
 
-## O que este projeto demonstra
+**Meu papel:** escopo e critérios de aceite, arquitetura e modelagem, escolha da stack, especificação dos contratos, priorização, revisão e validação.
+
+O uso de IA foi deliberado e documentado. O diferencial aqui não é o volume de código, e sim a direção técnica: especificar, decompor, validar e integrar cada entrega.
+
+## Processo de desenvolvimento (SDD)
+
+1. **Especificação** — problema, escopo e critérios de aceite por camada.
+2. **Contratos primeiro** — entidade e invariantes, porta de repositório, DTOs e casos de uso.
+3. **Implementação incremental** — domínio → aplicação → infraestrutura → apresentação, com commits pequenos.
+4. **Testes como gate** — unitários e integração com MySQL real antes de avançar.
+5. **Revisão** — cada entrega foi lida, ajustada e validada contra a especificação.
+
+## Destaques de engenharia
 
 - **Arquitetura em camadas** com a direção das dependências apontando para o domínio.
 - **Domínio rico**: `Task` concentra invariantes, transições de status e soft delete, em vez de ser um saco de getters/setters.
@@ -28,7 +40,7 @@ Não escondo o uso de IA — faz parte do meu processo. O que este projeto demon
 - Restaurar tarefas da lixeira.
 - Transições de status: `Pendente`, `Em andamento`, `Concluída` e `Cancelada`.
 - Ações rápidas de iniciar, concluir e cancelar.
-- Busca por nome ou descrição e filtro por status.
+- Busca por nome ou descrição, filtro por status e botão **Filtrar**.
 - Paginação server-side com 10 tarefas por página e navegação anterior/próxima.
 - Painel de detalhes com datas de criação, atualização, conclusão e exclusão.
 - Linhas coloridas por conclusão/atraso e data de finalização em verde ou vermelho conforme o prazo.
@@ -174,4 +186,4 @@ scripts/           seed de demonstração
 
 ---
 
-Projeto de estudo e portfólio, em evolução. O foco é demonstrar fundamentos de engenharia — domínio, arquitetura, persistência, testes e capacidade de entregar uma aplicação completa — com transparência sobre o uso de IA no processo.
+Projeto de portfólio em evolução, feito para demonstrar fundamentos de engenharia, consistência arquitetural e capacidade de entregar uma aplicação completa, com apoio de IA na interface, nos testes e no CI/CD.
