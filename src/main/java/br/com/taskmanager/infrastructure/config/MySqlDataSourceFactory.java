@@ -5,13 +5,18 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import io.github.cdimascio.dotenv.Dotenv;
 
-public class MySqlDataSource extends HikariDataSource {
+import javax.sql.DataSource;
 
-    public MySqlDataSource(Dotenv dotenv) {
-        super(config(dotenv));
+public final class MySqlDataSourceFactory {
+
+    private MySqlDataSourceFactory() {
     }
 
-    private static HikariConfig config(Dotenv dotenv) {
+    public static DataSource create(Dotenv dotenv) {
+        return new HikariDataSource(config(dotenv));
+    }
+
+    static HikariConfig config(Dotenv dotenv) {
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(required(dotenv.get("DB_URL"), "DB_URL"));
         config.setUsername(required(dotenv.get("DB_USER"), "DB_USER"));
@@ -19,8 +24,8 @@ public class MySqlDataSource extends HikariDataSource {
         return config;
     }
 
-    private static String required(String value, String name){
-        if (value == null){
+    private static String required(String value, String name) {
+        if (value == null) {
             throw new RequiredEnvFieldException(name);
         }
         return value;
