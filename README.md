@@ -36,6 +36,15 @@ A aplicação abre com três áreas bem separadas na barra lateral:
 
 A janela abre maximizada. Pressione `F11` para alternar a tela cheia e `Esc` para sair dela.
 
+## Dados de demonstração
+
+Para preencher a tabela com tarefas de exemplo (atenção: o script limpa a tabela atual):
+
+```bash
+set -a; . ./.env; set +a
+docker exec -i taskmanager-mysql mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < scripts/seed-demo.sql
+```
+
 ## Testes
 
 ```bash
