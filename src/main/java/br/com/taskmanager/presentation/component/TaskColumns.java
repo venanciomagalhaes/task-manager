@@ -106,11 +106,18 @@ public final class TaskColumns {
             @Override
             protected void updateItem(Task task, boolean empty) {
                 super.updateItem(task, empty);
-                if (empty || task == null || task.getFinishedAt() == null) {
+                if (empty || task == null) {
+                    setText(null);
+                    setGraphic(null);
+                    return;
+                }
+                if (task.getFinishedAt() == null) {
+                    setText("—");
                     setGraphic(null);
                     return;
                 }
                 CompletionTiming timing = CompletionTiming.of(task);
+                setText(null);
                 date.setText(converter.format(task.getFinishedAt()));
                 badge.setText(timing.label());
                 badge.getStyleClass().removeAll("timing-on-time", "timing-late");
