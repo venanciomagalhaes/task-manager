@@ -1,5 +1,7 @@
 -- Dados de demonstração para o print final.
--- Uso: docker exec -i taskmanager-mysql mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < scripts/seed-demo.sql
+-- Uso: docker exec -i taskmanager-mysql mysql --default-character-set=utf8mb4 -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < scripts/seed-demo.sql
+
+SET NAMES utf8mb4;
 
 TRUNCATE TABLE tasks;
 

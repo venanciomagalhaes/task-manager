@@ -42,7 +42,7 @@ Para preencher a tabela com tarefas de exemplo (atenção: o script limpa a tabe
 
 ```bash
 set -a; . ./.env; set +a
-docker exec -i taskmanager-mysql mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < scripts/seed-demo.sql
+docker exec -i taskmanager-mysql mysql --default-character-set=utf8mb4 -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < scripts/seed-demo.sql
 ```
 
 ## Testes
