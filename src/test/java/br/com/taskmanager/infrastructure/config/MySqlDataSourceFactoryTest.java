@@ -67,5 +67,7 @@ class MySqlDataSourceFactoryTest {
         assertEquals("jdbc:mysql://localhost:3306/taskmanager", config.getJdbcUrl());
         assertEquals("taskmanager", config.getUsername());
         assertEquals("secret", config.getPassword());
+        assertEquals("true", config.getDataSourceProperties().getProperty("useUnicode"));
+        assertEquals("UTF-8", config.getDataSourceProperties().getProperty("characterEncoding"));
     }
 }

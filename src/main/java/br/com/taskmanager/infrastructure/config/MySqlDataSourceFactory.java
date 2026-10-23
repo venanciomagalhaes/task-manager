@@ -21,6 +21,8 @@ public final class MySqlDataSourceFactory {
         config.setJdbcUrl(required(dotenv.get("DB_URL"), "DB_URL"));
         config.setUsername(required(dotenv.get("DB_USER"), "DB_USER"));
         config.setPassword(required(dotenv.get("DB_PASSWORD"), "DB_PASSWORD"));
+        config.addDataSourceProperty("useUnicode", "true");
+        config.addDataSourceProperty("characterEncoding", "UTF-8");
         return config;
     }
 
