@@ -62,7 +62,7 @@ class CreateTaskUseCaseTest {
         ValidationException ex = assertThrows(ValidationException.class, () ->
                 useCase.handle(new CreateTaskDto(null, "descrição", Instant.now().plusSeconds(3600))));
 
-        assertTrue(ex.getMessage().contains("name"));
+        assertTrue(ex.getMessage().contains("nome"));
         verify(repository, never()).save(any(Task.class));
     }
 
@@ -72,7 +72,7 @@ class CreateTaskUseCaseTest {
         ValidationException ex = assertThrows(ValidationException.class, () ->
                 useCase.handle(new CreateTaskDto("nome", "descrição", null)));
 
-        assertTrue(ex.getMessage().contains("deadline"));
+        assertTrue(ex.getMessage().contains("prazo"));
         verify(repository, never()).save(any(Task.class));
     }
 }

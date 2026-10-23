@@ -115,7 +115,7 @@ class TaskTest {
             ValidationException ex = assertThrows(ValidationException.class,
                     () -> new Task(null, NAME, DESCRIPTION, TaskStatus.PENDING, DEADLINE, null, CREATED_AT, UPDATED_AT, null));
 
-            assertEquals("O campo uuid é obrigatório", ex.getMessage());
+            assertEquals("Toda tarefa precisa de um identificador", ex.getMessage());
         }
 
         @Test
@@ -124,7 +124,7 @@ class TaskTest {
             ValidationException ex = assertThrows(ValidationException.class,
                     () -> new Task(FIXED_UUID, NAME, DESCRIPTION, null, DEADLINE, null, CREATED_AT, UPDATED_AT, null));
 
-            assertEquals("O campo status é obrigatório", ex.getMessage());
+            assertEquals("Toda tarefa precisa de um status", ex.getMessage());
         }
 
         @Test
@@ -133,7 +133,7 @@ class TaskTest {
             ValidationException ex = assertThrows(ValidationException.class,
                     () -> new Task(FIXED_UUID, NAME, DESCRIPTION, TaskStatus.PENDING, DEADLINE, null, null, UPDATED_AT, null));
 
-            assertEquals("O campo createdAt é obrigatório", ex.getMessage());
+            assertEquals("A data de criação é obrigatória", ex.getMessage());
         }
 
         @Test
@@ -142,7 +142,7 @@ class TaskTest {
             ValidationException ex = assertThrows(ValidationException.class,
                     () -> new Task(FIXED_UUID, NAME, DESCRIPTION, TaskStatus.PENDING, DEADLINE, null, CREATED_AT, null, null));
 
-            assertEquals("O campo updatedAt é obrigatório", ex.getMessage());
+            assertEquals("A data de atualização é obrigatória", ex.getMessage());
         }
 
         @Test
@@ -151,7 +151,7 @@ class TaskTest {
             ValidationException ex = assertThrows(ValidationException.class,
                     () -> new Task(FIXED_UUID, NAME, DESCRIPTION, TaskStatus.PENDING, null, null, CREATED_AT, UPDATED_AT, null));
 
-            assertEquals("O campo deadline é obrigatório", ex.getMessage());
+            assertEquals("O prazo é obrigatório", ex.getMessage());
         }
     }
 
@@ -165,7 +165,7 @@ class TaskTest {
             ValidationException ex = assertThrows(ValidationException.class,
                     () -> new Task(FIXED_UUID, null, DESCRIPTION, TaskStatus.PENDING, DEADLINE, null, CREATED_AT, UPDATED_AT, null));
 
-            assertEquals("O campo name é obrigatório e não pode estar em branco", ex.getMessage());
+            assertEquals("O nome da tarefa é obrigatório e não pode estar em branco", ex.getMessage());
         }
 
         @ParameterizedTest(name = "[{index}] name = \"{0}\"")
@@ -175,7 +175,7 @@ class TaskTest {
             ValidationException ex = assertThrows(ValidationException.class,
                     () -> new Task(FIXED_UUID, name, DESCRIPTION, TaskStatus.PENDING, DEADLINE, null, CREATED_AT, UPDATED_AT, null));
 
-            assertEquals("O campo name é obrigatório e não pode estar em branco", ex.getMessage());
+            assertEquals("O nome da tarefa é obrigatório e não pode estar em branco", ex.getMessage());
         }
 
         @Test
@@ -196,7 +196,7 @@ class TaskTest {
             ValidationException ex = assertThrows(ValidationException.class,
                     () -> new Task(FIXED_UUID, name, DESCRIPTION, TaskStatus.PENDING, DEADLINE, null, CREATED_AT, UPDATED_AT, null));
 
-            assertEquals("O campo name deve ter no máximo 255 caracteres", ex.getMessage());
+            assertEquals("O nome da tarefa deve ter no máximo 255 caracteres", ex.getMessage());
         }
 
         @Test
@@ -251,7 +251,7 @@ class TaskTest {
             ValidationException ex = assertThrows(ValidationException.class,
                     () -> new Task(FIXED_UUID, NAME, DESCRIPTION, TaskStatus.PENDING, deadline, null, CREATED_AT, UPDATED_AT, null));
 
-            assertEquals("O campo deadline não pode ser anterior à data de criação (createdAt)", ex.getMessage());
+            assertEquals("O prazo não pode ser anterior à data de criação", ex.getMessage());
         }
 
         @Test
@@ -294,7 +294,7 @@ class TaskTest {
             ValidationException ex = assertThrows(ValidationException.class,
                     () -> new Task(FIXED_UUID, NAME, DESCRIPTION, TaskStatus.PENDING, DEADLINE, null, CREATED_AT, updatedAt, null));
 
-            assertEquals("O campo updatedAt não pode ser anterior à data de criação (createdAt)", ex.getMessage());
+            assertEquals("A data de atualização não pode ser anterior à data de criação", ex.getMessage());
         }
 
         @Test
@@ -305,7 +305,7 @@ class TaskTest {
             ValidationException ex = assertThrows(ValidationException.class,
                     () -> new Task(FIXED_UUID, NAME, DESCRIPTION, TaskStatus.PENDING, DEADLINE, null, CREATED_AT, UPDATED_AT, deletedAt));
 
-            assertEquals("O campo deletedAt não pode ser anterior à data de criação (createdAt)", ex.getMessage());
+            assertEquals("A data de exclusão não pode ser anterior à data de criação", ex.getMessage());
         }
 
         @Test
@@ -316,7 +316,7 @@ class TaskTest {
             ValidationException ex = assertThrows(ValidationException.class,
                     () -> new Task(FIXED_UUID, NAME, DESCRIPTION, TaskStatus.COMPLETED, DEADLINE, finishedAt, CREATED_AT, UPDATED_AT, null));
 
-            assertEquals("O campo finishedAt não pode ser anterior à data de criação (createdAt)", ex.getMessage());
+            assertEquals("A data de conclusão não pode ser anterior à data de criação", ex.getMessage());
         }
     }
 
@@ -330,7 +330,7 @@ class TaskTest {
             ValidationException ex = assertThrows(ValidationException.class,
                     () -> new Task(FIXED_UUID, NAME, DESCRIPTION, TaskStatus.COMPLETED, DEADLINE, null, CREATED_AT, UPDATED_AT, null));
 
-            assertEquals("O campo finishedAt é obrigatório quando o status é COMPLETED", ex.getMessage());
+            assertEquals("A data de conclusão é obrigatória quando a tarefa está concluída", ex.getMessage());
         }
 
         @ParameterizedTest(name = "[{index}] status = {0}")
@@ -340,7 +340,7 @@ class TaskTest {
             ValidationException ex = assertThrows(ValidationException.class,
                     () -> new Task(FIXED_UUID, NAME, DESCRIPTION, status, DEADLINE, FINISHED_AT, CREATED_AT, UPDATED_AT, null));
 
-            assertEquals("O campo finishedAt só pode ser preenchido quando o status é COMPLETED", ex.getMessage());
+            assertEquals("A data de conclusão só pode existir quando a tarefa está concluída", ex.getMessage());
         }
     }
 

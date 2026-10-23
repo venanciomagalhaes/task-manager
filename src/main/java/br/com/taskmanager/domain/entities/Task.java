@@ -98,21 +98,21 @@ public class Task {
 
     private void setUuid(UUID uuid) {
         if (uuid == null) {
-            throw new ValidationException("O campo uuid é obrigatório");
+            throw new ValidationException("Toda tarefa precisa de um identificador");
         }
         this.uuid = uuid;
     }
 
     private void setName(String name) {
         if (name == null) {
-            throw new ValidationException("O campo name é obrigatório e não pode estar em branco");
+            throw new ValidationException("O nome da tarefa é obrigatório e não pode estar em branco");
         }
         String normalized = name.trim();
         if (normalized.isEmpty()) {
-            throw new ValidationException("O campo name é obrigatório e não pode estar em branco");
+            throw new ValidationException("O nome da tarefa é obrigatório e não pode estar em branco");
         }
         if (normalized.length() > 255) {
-            throw new ValidationException("O campo name deve ter no máximo 255 caracteres");
+            throw new ValidationException("O nome da tarefa deve ter no máximo 255 caracteres");
         }
         this.name = normalized;
     }
@@ -128,54 +128,54 @@ public class Task {
 
     private void setStatus(TaskStatus status) {
         if (status == null) {
-            throw new ValidationException("O campo status é obrigatório");
+            throw new ValidationException("Toda tarefa precisa de um status");
         }
         this.status = status;
     }
 
     private void setDeadline(Instant deadline) {
         if (deadline == null) {
-            throw new ValidationException("O campo deadline é obrigatório");
+            throw new ValidationException("O prazo é obrigatório");
         }
         if (deadline.isBefore(this.createdAt)) {
-            throw new ValidationException("O campo deadline não pode ser anterior à data de criação (createdAt)");
+            throw new ValidationException("O prazo não pode ser anterior à data de criação");
         }
         this.deadline = deadline;
     }
 
     private void setFinishedAt(Instant finishedAt) {
         if (finishedAt == null && this.status == TaskStatus.COMPLETED) {
-            throw new ValidationException("O campo finishedAt é obrigatório quando o status é COMPLETED");
+            throw new ValidationException("A data de conclusão é obrigatória quando a tarefa está concluída");
         }
         if (finishedAt != null && this.status != TaskStatus.COMPLETED) {
-            throw new ValidationException("O campo finishedAt só pode ser preenchido quando o status é COMPLETED");
+            throw new ValidationException("A data de conclusão só pode existir quando a tarefa está concluída");
         }
         if (finishedAt != null && finishedAt.isBefore(this.createdAt)) {
-            throw new ValidationException("O campo finishedAt não pode ser anterior à data de criação (createdAt)");
+            throw new ValidationException("A data de conclusão não pode ser anterior à data de criação");
         }
         this.finishedAt = finishedAt;
     }
 
     private void setCreatedAt(Instant createdAt) {
         if (createdAt == null) {
-            throw new ValidationException("O campo createdAt é obrigatório");
+            throw new ValidationException("A data de criação é obrigatória");
         }
         this.createdAt = createdAt;
     }
 
     private void setUpdatedAt(Instant updatedAt) {
         if (updatedAt == null) {
-            throw new ValidationException("O campo updatedAt é obrigatório");
+            throw new ValidationException("A data de atualização é obrigatória");
         }
         if (updatedAt.isBefore(this.createdAt)) {
-            throw new ValidationException("O campo updatedAt não pode ser anterior à data de criação (createdAt)");
+            throw new ValidationException("A data de atualização não pode ser anterior à data de criação");
         }
         this.updatedAt = updatedAt;
     }
 
     private void setDeletedAt(Instant deletedAt) {
         if (deletedAt != null && deletedAt.isBefore(this.createdAt)) {
-            throw new ValidationException("O campo deletedAt não pode ser anterior à data de criação (createdAt)");
+            throw new ValidationException("A data de exclusão não pode ser anterior à data de criação");
         }
         this.deletedAt = deletedAt;
     }
