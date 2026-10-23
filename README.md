@@ -2,6 +2,10 @@
 
 **Do domínio ao desktop:** um gerenciador de tarefas em Java 25 com arquitetura em camadas, MySQL e interface JavaFX.
 
+![Tela principal do Task Manager](docs/images/task-manager.png)
+
+*Lista com busca, filtro por status, paginação, status coloridos e painel de detalhes.*
+
 ## Contexto e autoria
 
 O objetivo deste projeto foi construir uma aplicação completa — domínio, persistência, testes e interface desktop — e exercitar decisões de engenharia de ponta a ponta.
