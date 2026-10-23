@@ -14,6 +14,7 @@
         <junit.version>5.13.4</junit.version>
         <mockito.version>5.24.0</mockito.version>
         <testcontainers.version>2.0.5</testcontainers.version>
+        <javafx.version>25.0.5</javafx.version>
     </properties>
 
     <dependencyManagement>
@@ -41,6 +42,12 @@
             <artifactId>dotenv-java</artifactId>
             <version>3.2.0</version>
             <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
         </dependency>
 
         <dependency>
@@ -115,6 +122,14 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.8</version>
+                <configuration>
+                    <mainClass>br.com.taskmanager.presentation.Main</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>
