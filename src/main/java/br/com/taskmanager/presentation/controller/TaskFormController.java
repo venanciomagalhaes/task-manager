@@ -9,9 +9,11 @@ import br.com.taskmanager.application.usecases.UpdateTaskUseCase;
 import br.com.taskmanager.domain.entities.Task;
 import br.com.taskmanager.domain.enums.TaskStatus;
 import br.com.taskmanager.domain.exceptions.DomainException;
+import br.com.taskmanager.domain.exceptions.ValidationException;
 import br.com.taskmanager.presentation.service.AlertService;
 import br.com.taskmanager.presentation.service.FxRunner;
 import br.com.taskmanager.presentation.util.InstantConverter;
+import br.com.taskmanager.presentation.util.LocalDateConverter;
 import br.com.taskmanager.presentation.util.StatusText;
 import br.com.taskmanager.presentation.viewmodel.TaskFormViewModel;
 import javafx.geometry.Pos;
@@ -29,6 +31,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 public final class TaskFormController {
@@ -45,6 +48,7 @@ public final class TaskFormController {
     private final TextField nameField = new TextField();
     private final TextArea descriptionField = new TextArea();
     private final DatePicker deadlinePicker = new DatePicker();
+    private final LocalDateConverter dateConverter = new LocalDateConverter();
     private final TextField timeField = new TextField();
     private final ComboBox<TaskStatus> statusBox = new ComboBox<>();
     private final Label statusLabel = new Label("Status *");
@@ -127,6 +131,10 @@ public final class TaskFormController {
         descriptionField.setWrapText(true);
 
         deadlinePicker.setPrefWidth(190);
+        deadlinePicker.setConverter(dateConverter);
+        deadlinePicker.setPromptText(LocalDateConverter.FORMAT);
+        deadlinePicker.setEditable(true);
+        deadlinePicker.getEditor().setPrefColumnCount(10);
         timeField.setPromptText("HH:mm");
         timeField.setPrefWidth(100);
 
@@ -234,9 +242,21 @@ public final class TaskFormController {
     private void readForm() {
         viewModel.setName(nameField.getText());
         viewModel.setDescription(descriptionField.getText());
-        viewModel.setDeadlineDate(deadlinePicker.getValue());
+        viewModel.setDeadlineDate(readDeadline());
         viewModel.setDeadlineTime(timeField.getText());
         viewModel.setStatus(statusBox.getValue());
+    }
+
+    private LocalDate readDeadline() {
+        String text = deadlinePicker.getEditor().getText();
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        LocalDate date = dateConverter.fromString(text);
+        if (date == null) {
+            throw new ValidationException("Data inválida. Use o formato " + LocalDateConverter.FORMAT_HINT);
+        }
+        return date;
     }
 
     private void handleFailure(Throwable error) {

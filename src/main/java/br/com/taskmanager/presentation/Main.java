@@ -19,6 +19,7 @@ import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 import javax.sql.DataSource;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -28,11 +29,13 @@ public final class Main extends Application {
     private ExecutorService executor;
 
     public static void main(String[] args) {
+        Locale.setDefault(Locale.forLanguageTag("pt-BR"));
         launch(args);
     }
 
     @Override
     public void start(Stage stage) {
+        Locale.setDefault(Locale.forLanguageTag("pt-BR"));
         try {
             Dotenv dotenv = Dotenv.load();
             this.dataSource = MySqlDataSourceFactory.create(dotenv);
