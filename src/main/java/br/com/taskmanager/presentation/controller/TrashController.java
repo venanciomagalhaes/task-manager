@@ -14,7 +14,6 @@ import br.com.taskmanager.presentation.service.FxRunner;
 import br.com.taskmanager.presentation.util.InstantConverter;
 import br.com.taskmanager.presentation.viewmodel.StatusFilter;
 import br.com.taskmanager.presentation.viewmodel.TaskListViewModel;
-import javafx.animation.PauseTransition;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -26,7 +25,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.util.Duration;
 
 public final class TrashController {
 
@@ -39,16 +37,15 @@ public final class TrashController {
     private final TableView<Task> table = new TableView<>();
     private final TextField searchField = new TextField();
     private final ComboBox<StatusFilter> statusFilter = new ComboBox<>();
+    private final Button filterButton = new Button("Filtrar");
     private final Button clearFiltersButton = new Button("Limpar filtros");
     private final PaginationBar paginationBar = new PaginationBar(this::previousPage, this::nextPage);
-    private final PauseTransition searchDebounce = new PauseTransition(Duration.millis(300));
     private final TaskDetailPane detailPane;
     private final Button restoreButton = new Button("Restaurar");
     private final Button refreshButton = new Button("Atualizar");
     private final VBox root = new VBox(16);
 
     private boolean busy;
-    private boolean suppressFilterEvents;
 
     public TrashController(
             ListTasksUseCase listTasks,
@@ -105,25 +102,14 @@ public final class TrashController {
 
         searchField.setPromptText("Buscar na lixeira");
         searchField.setPrefWidth(260);
-        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (suppressFilterEvents) {
-                return;
-            }
-            viewModel.setSearch(newValue);
-            searchDebounce.playFromStart();
-        });
-        searchDebounce.setOnFinished(event -> refresh());
+        searchField.setOnAction(event -> applyFilters());
 
         statusFilter.getItems().setAll(StatusFilter.values());
         statusFilter.getSelectionModel().select(StatusFilter.ALL);
         statusFilter.setPrefWidth(180);
-        statusFilter.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (suppressFilterEvents) {
-                return;
-            }
-            viewModel.setStatus(newValue == null ? null : newValue.status());
-            refresh();
-        });
+
+        filterButton.getStyleClass().add("secondary-button");
+        filterButton.setOnAction(event -> applyFilters());
 
         clearFiltersButton.getStyleClass().add("secondary-button");
         clearFiltersButton.setOnAction(event -> clearFilters());
@@ -131,7 +117,8 @@ public final class TrashController {
         refreshButton.getStyleClass().add("secondary-button");
         refreshButton.setOnAction(event -> refresh());
 
-        HBox toolbar = new HBox(8, searchField, statusFilter, clearFiltersButton, spacer(), refreshButton);
+        HBox toolbar = new HBox(8, searchField, filterButton, statusFilter, clearFiltersButton,
+                spacer(), refreshButton);
         toolbar.setAlignment(Pos.CENTER_LEFT);
         toolbar.getStyleClass().add("toolbar");
 
@@ -174,12 +161,18 @@ public final class TrashController {
     }
 
     private void clearFilters() {
-        suppressFilterEvents = true;
         searchField.clear();
         statusFilter.getSelectionModel().select(StatusFilter.ALL);
-        suppressFilterEvents = false;
-        searchDebounce.stop();
         viewModel.clearFilters();
+        refresh();
+    }
+
+    private void applyFilters() {
+        if (busy) {
+            return;
+        }
+        viewModel.setSearch(searchField.getText());
+        viewModel.setStatus(statusFilter.getValue() == null ? null : statusFilter.getValue().status());
         refresh();
     }
 
@@ -208,6 +201,7 @@ public final class TrashController {
         this.busy = busy;
         searchField.setDisable(busy);
         statusFilter.setDisable(busy);
+        filterButton.setDisable(busy);
         clearFiltersButton.setDisable(busy);
         refreshButton.setDisable(busy);
         paginationBar.setBusy(busy);
