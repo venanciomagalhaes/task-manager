@@ -1,5 +1,9 @@
 package br.com.taskmanager.infrastructure.repositories;
 
+import br.com.taskmanager.application.queries.PageRequest;
+import br.com.taskmanager.application.queries.PageResult;
+import br.com.taskmanager.application.queries.TaskQuery;
+import br.com.taskmanager.application.queries.TaskScope;
 import br.com.taskmanager.domain.entities.Task;
 import br.com.taskmanager.domain.enums.TaskStatus;
 import br.com.taskmanager.infrastructure.exceptions.QueryException;
@@ -28,6 +32,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,6 +45,7 @@ class MySqlTaskRepositoryTest {
     private static final Instant DEADLINE = Instant.parse("2026-01-02T10:00:00Z");
     private static final Instant FINISHED_AT = Instant.parse("2026-01-01T12:00:00Z");
     private static final Instant DELETED_AT = Instant.parse("2026-01-01T13:00:00Z");
+    private static final TaskQuery ACTIVE_TASKS = new TaskQuery("", null, TaskScope.ACTIVE);
 
     @Container
     private static final MySQLContainer MYSQL = new MySQLContainer("mysql:8.4")
@@ -177,77 +183,126 @@ class MySqlTaskRepositoryTest {
     }
 
     @Test
-    @DisplayName("getAll sem trashed retorna apenas tasks não deletadas")
-    void getAllSemTrashed() {
-        repository.save(task(UUID.randomUUID(), "pendente", TaskStatus.PENDING, null, null));
-        repository.save(task(UUID.randomUUID(), "completa", TaskStatus.COMPLETED, FINISHED_AT, null));
+    @DisplayName("search pagina as tarefas ativas e informa o total")
+    void searchPaginaTarefasAtivas() {
+        repository.save(task(UUID.randomUUID(), "primeira", TaskStatus.PENDING,
+                DEADLINE.minusSeconds(3600), null, null));
+        repository.save(task(UUID.randomUUID(), "segunda", TaskStatus.PENDING, DEADLINE, null, null));
+        repository.save(task(UUID.randomUUID(), "terceira", TaskStatus.PENDING,
+                DEADLINE.plusSeconds(3600), null, null));
         repository.save(task(UUID.randomUUID(), "deletada", TaskStatus.PENDING, null, DELETED_AT));
 
-        List<Task> tasks = repository.getAll(false);
+        PageResult<Task> firstPage = repository.search(ACTIVE_TASKS, new PageRequest(0, 2));
 
-        assertEquals(2, tasks.size());
-        assertTrue(tasks.stream().allMatch(task -> task.getDeletedAt() == null));
+        assertEquals(3, firstPage.totalElements());
+        assertEquals(2, firstPage.totalPages());
+        assertTrue(firstPage.hasNext());
+        assertFalse(firstPage.hasPrevious());
+        assertEquals(List.of("primeira", "segunda"),
+                firstPage.items().stream().map(Task::getName).toList());
+
+        PageResult<Task> secondPage = repository.search(ACTIVE_TASKS, new PageRequest(1, 2));
+
+        assertEquals(3, secondPage.totalElements());
+        assertFalse(secondPage.hasNext());
+        assertTrue(secondPage.hasPrevious());
+        assertEquals(List.of("terceira"),
+                secondPage.items().stream().map(Task::getName).toList());
     }
 
     @Test
-    @DisplayName("getAll com trashed retorna todas as tasks")
-    void getAllComTrashed() {
+    @DisplayName("search filtra por nome e descrição ignorando caixa")
+    void searchFiltraPorNomeEDescricao() {
+        repository.save(new Task(UUID.randomUUID(), "Estudar Java", "revisar coleções",
+                TaskStatus.PENDING, DEADLINE, null, CREATED_AT, UPDATED_AT, null));
+        repository.save(new Task(UUID.randomUUID(), "Comprar café", "Java no mercado",
+                TaskStatus.PENDING, DEADLINE, null, CREATED_AT, UPDATED_AT, null));
+        repository.save(new Task(UUID.randomUUID(), "Ler livro", "ficção",
+                TaskStatus.PENDING, DEADLINE, null, CREATED_AT, UPDATED_AT, null));
+
+        PageResult<Task> byName = repository.search(
+                new TaskQuery("estudar", null, TaskScope.ACTIVE), new PageRequest(0, 10));
+        PageResult<Task> byDescription = repository.search(
+                new TaskQuery("mercado", null, TaskScope.ACTIVE), new PageRequest(0, 10));
+        PageResult<Task> ignoringCase = repository.search(
+                new TaskQuery("JAVA", null, TaskScope.ACTIVE), new PageRequest(0, 10));
+
+        assertEquals(List.of("Estudar Java"), byName.items().stream().map(Task::getName).toList());
+        assertEquals(List.of("Comprar café"), byDescription.items().stream().map(Task::getName).toList());
+        assertEquals(2, ignoringCase.totalElements());
+    }
+
+    @Test
+    @DisplayName("search filtra por status")
+    void searchFiltraPorStatus() {
         repository.save(task(UUID.randomUUID(), "pendente", TaskStatus.PENDING, null, null));
+        repository.save(task(UUID.randomUUID(), "concluída", TaskStatus.COMPLETED, FINISHED_AT, null));
+        repository.save(task(UUID.randomUUID(), "cancelada", TaskStatus.CANCELED, null, null));
+
+        PageResult<Task> completed = repository.search(
+                new TaskQuery("", TaskStatus.COMPLETED, TaskScope.ACTIVE), new PageRequest(0, 10));
+
+        assertEquals(1, completed.totalElements());
+        assertEquals(TaskStatus.COMPLETED, completed.items().getFirst().getStatus());
+    }
+
+    @Test
+    @DisplayName("search separa tarefas ativas das excluídas")
+    void searchSeparaAtivasEDeletadas() {
+        repository.save(task(UUID.randomUUID(), "ativa", TaskStatus.PENDING, null, null));
         repository.save(task(UUID.randomUUID(), "deletada", TaskStatus.PENDING, null, DELETED_AT));
 
-        List<Task> tasks = repository.getAll(true);
+        PageResult<Task> active = repository.search(ACTIVE_TASKS, new PageRequest(0, 10));
+        PageResult<Task> trashed = repository.search(
+                new TaskQuery("", null, TaskScope.TRASHED), new PageRequest(0, 10));
 
-        assertEquals(2, tasks.size());
-        assertTrue(tasks.stream().anyMatch(task -> task.getDeletedAt() != null));
+        assertEquals(1, active.totalElements());
+        assertEquals(1, trashed.totalElements());
+        assertEquals("deletada", trashed.items().getFirst().getName());
     }
 
     @Test
-    @DisplayName("getAll sem trashed ordena por deadline")
-    void getAllSemTrashedOrdenaPorDeadline() {
-        Task ultima = task(UUID.randomUUID(), "última", TaskStatus.PENDING,
-                DEADLINE.plusSeconds(3600), null, null);
-        Task primeira = task(UUID.randomUUID(), "primeira", TaskStatus.PENDING,
-                DEADLINE.minusSeconds(3600), null, null);
-        Task segunda = task(UUID.randomUUID(), "segunda", TaskStatus.PENDING, DEADLINE, null, null);
-        repository.save(ultima);
-        repository.save(segunda);
-        repository.save(primeira);
+    @DisplayName("search escapa curingas do LIKE")
+    void searchEscapaCuringasDoLike() {
+        repository.save(task(UUID.randomUUID(), "100% concluído", TaskStatus.PENDING, null, null));
+        repository.save(task(UUID.randomUUID(), "100X concluído", TaskStatus.PENDING, null, null));
 
-        List<Task> tasks = repository.getAll(false);
+        PageResult<Task> result = repository.search(
+                new TaskQuery("100%", null, TaskScope.ACTIVE), new PageRequest(0, 10));
 
-        assertEquals(
-                List.of(primeira.getUuid(), segunda.getUuid(), ultima.getUuid()),
-                tasks.stream().map(Task::getUuid).toList());
+        assertEquals(1, result.totalElements());
+        assertEquals("100% concluído", result.items().getFirst().getName());
     }
 
     @Test
-    @DisplayName("getAll com trashed ordena por deadline")
-    void getAllComTrashedOrdenaPorDeadline() {
-        Task ultima = task(UUID.randomUUID(), "última", TaskStatus.PENDING,
-                DEADLINE.plusSeconds(7200), null, null);
-        Task primeira = task(UUID.randomUUID(), "primeira", TaskStatus.PENDING,
-                DEADLINE.minusSeconds(3600), null, null);
-        Task deletada = task(UUID.randomUUID(), "deletada", TaskStatus.PENDING,
-                DEADLINE, null, DELETED_AT);
-        Task segunda = task(UUID.randomUUID(), "segunda", TaskStatus.PENDING,
-                DEADLINE.plusSeconds(3600), null, null);
-        repository.save(ultima);
-        repository.save(segunda);
-        repository.save(deletada);
-        repository.save(primeira);
+    @DisplayName("search ordena por prazo e desempata por uuid")
+    void searchOrdenaPorPrazoEUuid() {
+        UUID primeiroId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        UUID segundoId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        repository.save(new Task(segundoId, "segunda", "descrição",
+                TaskStatus.PENDING, DEADLINE, null, CREATED_AT, UPDATED_AT, null));
+        repository.save(new Task(primeiroId, "primeira", "descrição",
+                TaskStatus.PENDING, DEADLINE, null, CREATED_AT, UPDATED_AT, null));
 
-        List<Task> tasks = repository.getAll(true);
+        PageResult<Task> result = repository.search(ACTIVE_TASKS, new PageRequest(0, 10));
 
-        assertEquals(
-                List.of(primeira.getUuid(), deletada.getUuid(), segunda.getUuid(), ultima.getUuid()),
-                tasks.stream().map(Task::getUuid).toList());
+        assertEquals(List.of(primeiroId, segundoId),
+                result.items().stream().map(Task::getUuid).toList());
     }
 
     @Test
-    @DisplayName("getAll retorna lista vazia quando não há tasks")
-    void getAllVazio() {
-        assertTrue(repository.getAll(false).isEmpty());
-        assertTrue(repository.getAll(true).isEmpty());
+    @DisplayName("search retorna página vazia quando não há tarefas")
+    void searchSemResultados() {
+        PageResult<Task> active = repository.search(ACTIVE_TASKS, new PageRequest(0, 10));
+        PageResult<Task> trashed = repository.search(
+                new TaskQuery("", null, TaskScope.TRASHED), new PageRequest(0, 10));
+
+        assertTrue(active.items().isEmpty());
+        assertEquals(0, active.totalElements());
+        assertEquals(0, active.totalPages());
+        assertFalse(active.hasNext());
+        assertFalse(active.hasPrevious());
+        assertTrue(trashed.items().isEmpty());
     }
 
     @Test
@@ -261,7 +316,8 @@ class MySqlTaskRepositoryTest {
         QueryException findByUuidError = assertThrows(QueryException.class,
                 () -> failingRepository.findByUuid(uuid));
         assertTrue(findByUuidError.getMessage().contains(uuid.toString()));
-        assertThrows(QueryException.class, () -> failingRepository.getAll(false));
+        assertThrows(QueryException.class,
+                () -> failingRepository.search(ACTIVE_TASKS, new PageRequest(0, 10)));
         assertThrows(QueryException.class,
                 () -> failingRepository.save(task(uuid, "nome", TaskStatus.PENDING, null, null)));
     }
@@ -272,9 +328,10 @@ class MySqlTaskRepositoryTest {
         UUID uuid = UUID.randomUUID();
         repository.save(task(uuid, "primeira", TaskStatus.PENDING, null, null));
 
-        assertEquals(1, repository.getAll(false).size());
+        assertEquals(1, repository.search(ACTIVE_TASKS, new PageRequest(0, 10)).items().size());
         assertTrue(repository.findByUuid(uuid).isPresent());
-        assertEquals(1, repository.getAll(true).size());
+        assertEquals(0, repository.search(
+                new TaskQuery("", null, TaskScope.TRASHED), new PageRequest(0, 10)).items().size());
     }
 
     private static HikariDataSource dataSource() {

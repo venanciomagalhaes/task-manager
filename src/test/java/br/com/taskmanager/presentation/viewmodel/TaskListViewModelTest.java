@@ -1,5 +1,8 @@
 package br.com.taskmanager.presentation.viewmodel;
 
+import br.com.taskmanager.application.queries.PageRequest;
+import br.com.taskmanager.application.queries.PageResult;
+import br.com.taskmanager.application.queries.TaskScope;
 import br.com.taskmanager.domain.entities.Task;
 import br.com.taskmanager.domain.enums.TaskStatus;
 import org.junit.jupiter.api.DisplayName;
@@ -12,6 +15,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TaskListViewModelTest {
@@ -22,45 +26,96 @@ class TaskListViewModelTest {
     private final TaskListViewModel viewModel = new TaskListViewModel();
 
     @Test
-    @DisplayName("filtra por nome ignorando maiúsculas e minúsculas")
-    void filtraPorNome() {
-        Task estudar = task("Estudar Java", TaskStatus.PENDING, DEADLINE, null);
-        Task comprar = task("Comprar café", TaskStatus.PENDING, DEADLINE, null);
-        viewModel.setTasks(List.of(estudar, comprar));
-        viewModel.setSearch("java");
-
-        assertEquals(List.of(estudar), viewModel.visibleTasks());
+    @DisplayName("começa na primeira página com tamanho padrão")
+    void comecaNaPrimeiraPagina() {
+        assertEquals(new PageRequest(0, 10), viewModel.request());
+        assertFalse(viewModel.hasPrevious());
+        assertFalse(viewModel.hasNext());
+        assertEquals("Página 1 de 1", viewModel.pageLabel());
+        assertEquals("0 tarefas", viewModel.totalLabel());
     }
 
     @Test
-    @DisplayName("filtra por status")
-    void filtraPorStatus() {
-        Task pendente = task("Pendente", TaskStatus.PENDING, DEADLINE, null);
-        Task concluida = task("Concluída", TaskStatus.COMPLETED, DEADLINE, null);
-        viewModel.setTasks(List.of(pendente, concluida));
-        viewModel.setStatusFilter(TaskStatus.COMPLETED);
+    @DisplayName("aplica o resultado e habilita a próxima página")
+    void aplicaPrimeiraPagina() {
+        viewModel.apply(new PageResult<>(List.of(task("Tarefa")), 25, 0, 10));
 
-        assertEquals(List.of(concluida), viewModel.visibleTasks());
+        assertTrue(viewModel.hasNext());
+        assertFalse(viewModel.hasPrevious());
+        assertEquals("Página 1 de 3", viewModel.pageLabel());
+        assertEquals("25 tarefas", viewModel.totalLabel());
+        assertEquals(new PageRequest(1, 10), viewModel.nextRequest());
     }
 
     @Test
-    @DisplayName("ordena as tarefas visíveis por prazo")
-    void ordenaPorPrazo() {
-        Task ultima = task("Última", TaskStatus.PENDING, DEADLINE.plus(1, ChronoUnit.HOURS), null);
-        Task primeira = task("Primeira", TaskStatus.PENDING, DEADLINE.minus(1, ChronoUnit.HOURS), null);
-        viewModel.setTasks(List.of(ultima, primeira));
+    @DisplayName("navega para trás a partir da segunda página")
+    void segundaPagina() {
+        viewModel.apply(new PageResult<>(List.of(task("Tarefa")), 25, 1, 10));
 
-        assertEquals(List.of(primeira, ultima), viewModel.visibleTasks());
+        assertTrue(viewModel.hasPrevious());
+        assertEquals(new PageRequest(0, 10), viewModel.previousRequest());
     }
 
     @Test
-    @DisplayName("lixeira retorna apenas excluídas, da mais recente para a mais antiga")
-    void lixeiraRetornaApenasExcluidas() {
-        Task ativa = task("Ativa", TaskStatus.PENDING, DEADLINE, null);
-        Task antiga = task("Antiga", TaskStatus.PENDING, DEADLINE, CREATED_AT.plus(1, ChronoUnit.HOURS));
-        Task recente = task("Recente", TaskStatus.PENDING, DEADLINE, CREATED_AT.plus(2, ChronoUnit.HOURS));
+    @DisplayName("não habilita próxima na última página")
+    void ultimaPagina() {
+        viewModel.apply(new PageResult<>(List.of(task("Tarefa")), 21, 2, 10));
 
-        assertEquals(List.of(recente, antiga), TaskListViewModel.deletedOnly(List.of(ativa, antiga, recente)));
+        assertFalse(viewModel.hasNext());
+        assertTrue(viewModel.hasPrevious());
+        assertEquals("Página 3 de 3", viewModel.pageLabel());
+    }
+
+    @Test
+    @DisplayName("busca volta para a primeira página e atualiza a consulta")
+    void buscaResetaPagina() {
+        viewModel.apply(new PageResult<>(List.of(task("Tarefa")), 30, 2, 10));
+
+        viewModel.setSearch("  estudo  ");
+
+        assertEquals("estudo", viewModel.query().search());
+        assertEquals(new PageRequest(0, 10), viewModel.request());
+        assertFalse(viewModel.hasPrevious());
+    }
+
+    @Test
+    @DisplayName("filtro de status volta para a primeira página")
+    void statusResetaPagina() {
+        viewModel.apply(new PageResult<>(List.of(task("Tarefa")), 30, 1, 10));
+
+        viewModel.setStatus(TaskStatus.COMPLETED);
+
+        assertEquals(TaskStatus.COMPLETED, viewModel.query().status());
+        assertEquals(new PageRequest(0, 10), viewModel.request());
+    }
+
+    @Test
+    @DisplayName("limpar filtros remove busca e status")
+    void limparFiltros() {
+        viewModel.setSearch("estudo");
+        viewModel.setStatus(TaskStatus.PENDING);
+
+        viewModel.clearFilters();
+
+        assertEquals("", viewModel.query().search());
+        assertNull(viewModel.query().status());
+        assertEquals(TaskScope.ACTIVE, viewModel.query().scope());
+    }
+
+    @Test
+    @DisplayName("usa o escopo da lixeira")
+    void escopoLixeira() {
+        TaskListViewModel trash = new TaskListViewModel(TaskScope.TRASHED);
+
+        assertEquals(TaskScope.TRASHED, trash.query().scope());
+    }
+
+    @Test
+    @DisplayName("singulariza o total de uma tarefa")
+    void totalSingular() {
+        viewModel.apply(new PageResult<>(List.of(task("Tarefa")), 1, 0, 10));
+
+        assertEquals("1 tarefa", viewModel.totalLabel());
     }
 
     @Test
@@ -90,6 +145,10 @@ class TaskListViewModelTest {
         assertFalse(TaskListViewModel.canComplete(excluida));
         assertTrue(TaskListViewModel.canRestore(excluida));
         assertFalse(TaskListViewModel.canRestore(task("Ativa", TaskStatus.PENDING, DEADLINE, null)));
+    }
+
+    private Task task(String name) {
+        return task(name, TaskStatus.PENDING, DEADLINE, null);
     }
 
     private Task task(String name, TaskStatus status, Instant deadline, Instant deletedAt) {

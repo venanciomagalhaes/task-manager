@@ -1,19 +1,22 @@
 package br.com.taskmanager.application.usecases;
 
+import br.com.taskmanager.application.queries.PageRequest;
+import br.com.taskmanager.application.queries.PageResult;
+import br.com.taskmanager.application.queries.TaskQuery;
+import br.com.taskmanager.application.queries.TaskScope;
 import br.com.taskmanager.application.repositories.TaskRepository;
 import br.com.taskmanager.domain.entities.Task;
 import br.com.taskmanager.domain.enums.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,16 +33,18 @@ class ListTasksUseCaseTest {
         useCase = new ListTasksUseCase(repository);
     }
 
-    @ParameterizedTest(name = "withTrashed={0}")
-    @ValueSource(booleans = {true, false})
-    @DisplayName("delega o filtro para o repository")
-    void delegaFiltro(boolean withTrashed) {
-        List<Task> tasks = List.of(TaskFixture.task(TaskStatus.PENDING));
-        when(repository.getAll(withTrashed)).thenReturn(tasks);
+    @Test
+    @DisplayName("delega consulta paginada para o repository")
+    void delegaConsultaPaginada() {
+        TaskQuery query = new TaskQuery("estudo", TaskStatus.PENDING, TaskScope.ACTIVE);
+        PageRequest page = new PageRequest(1, 10);
+        PageResult<Task> expected = new PageResult<>(
+                List.of(TaskFixture.task(TaskStatus.PENDING)), 12, 1, 10);
+        when(repository.search(query, page)).thenReturn(expected);
 
-        List<Task> result = useCase.handle(withTrashed);
+        PageResult<Task> result = useCase.handle(query, page);
 
-        assertEquals(tasks, result);
-        verify(repository).getAll(withTrashed);
+        assertSame(expected, result);
+        verify(repository).search(query, page);
     }
 }

@@ -1,11 +1,13 @@
 package br.com.taskmanager.presentation.controller;
 
 import br.com.taskmanager.application.dtos.UpdateTaskDto;
+import br.com.taskmanager.application.queries.PageRequest;
 import br.com.taskmanager.application.usecases.DeleteTaskUseCase;
 import br.com.taskmanager.application.usecases.ListTasksUseCase;
 import br.com.taskmanager.application.usecases.UpdateTaskUseCase;
 import br.com.taskmanager.domain.entities.Task;
 import br.com.taskmanager.domain.enums.TaskStatus;
+import br.com.taskmanager.presentation.component.PaginationBar;
 import br.com.taskmanager.presentation.component.TaskColumns;
 import br.com.taskmanager.presentation.component.TaskDetailPane;
 import br.com.taskmanager.presentation.component.TaskRows;
@@ -14,9 +16,7 @@ import br.com.taskmanager.presentation.service.FxRunner;
 import br.com.taskmanager.presentation.util.InstantConverter;
 import br.com.taskmanager.presentation.viewmodel.StatusFilter;
 import br.com.taskmanager.presentation.viewmodel.TaskListViewModel;
-import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+import javafx.animation.PauseTransition;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -47,6 +47,9 @@ public final class TaskListController {
     private final TableView<Task> table = new TableView<>();
     private final TextField searchField = new TextField();
     private final ComboBox<StatusFilter> statusFilter = new ComboBox<>();
+    private final Button clearFiltersButton = new Button("Limpar filtros");
+    private final PaginationBar paginationBar = new PaginationBar(this::previousPage, this::nextPage);
+    private final PauseTransition searchDebounce = new PauseTransition(Duration.millis(300));
     private final TaskDetailPane detailPane;
     private final Button editButton = new Button("Editar");
     private final Button startButton = new Button("Iniciar");
@@ -56,9 +59,9 @@ public final class TaskListController {
     private final Button refreshButton = new Button("Atualizar");
     private final Button newButton = new Button("Nova tarefa");
     private final VBox root = new VBox(16);
-    private final Timeline overdueRefresh = new Timeline(new KeyFrame(Duration.seconds(30), event -> table.refresh()));
 
     private boolean busy;
+    private boolean suppressFilterEvents;
 
     public TaskListController(
             ListTasksUseCase listTasks,
@@ -86,16 +89,28 @@ public final class TaskListController {
     }
 
     public void refresh() {
+        load(viewModel.request());
+    }
+
+    private void load(PageRequest request) {
         setBusy(true);
         runner.run(
-                () -> listTasks.handle(false),
-                tasks -> {
-                    viewModel.setTasks(tasks);
-                    applyFilters();
+                () -> listTasks.handle(viewModel.query(), request),
+                result -> {
+                    if (result.isEmpty() && result.page() > 0) {
+                        load(new PageRequest(result.page() - 1, result.size()));
+                        return;
+                    }
+                    viewModel.apply(result);
+                    table.getItems().setAll(result.items());
+                    table.getSelectionModel().clearSelection();
+                    onSelectionChanged(null);
+                    paginationBar.update(viewModel);
                     setBusy(false);
                 },
                 error -> {
                     setBusy(false);
+                    paginationBar.update(viewModel);
                     alerts.showError(error);
                 }
         );
@@ -107,27 +122,37 @@ public final class TaskListController {
         Label subtitle = new Label("Gerencie as tarefas ativas. Itens excluídos ficam na lixeira.");
         subtitle.getStyleClass().add("page-subtitle");
 
-        searchField.setPromptText("Buscar por nome");
-        searchField.setPrefWidth(260);
+        searchField.setPromptText("Buscar por nome ou descrição");
+        searchField.setPrefWidth(280);
         searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (suppressFilterEvents) {
+                return;
+            }
             viewModel.setSearch(newValue);
-            applyFilters();
+            searchDebounce.playFromStart();
         });
+        searchDebounce.setOnFinished(event -> refresh());
 
         statusFilter.getItems().setAll(StatusFilter.values());
         statusFilter.getSelectionModel().select(StatusFilter.ALL);
         statusFilter.setPrefWidth(180);
         statusFilter.valueProperty().addListener((observable, oldValue, newValue) -> {
-            viewModel.setStatusFilter(newValue == null ? null : newValue.status());
-            applyFilters();
+            if (suppressFilterEvents) {
+                return;
+            }
+            viewModel.setStatus(newValue == null ? null : newValue.status());
+            refresh();
         });
+
+        clearFiltersButton.getStyleClass().add("secondary-button");
+        clearFiltersButton.setOnAction(event -> clearFilters());
 
         refreshButton.getStyleClass().add("secondary-button");
         refreshButton.setOnAction(event -> refresh());
         newButton.getStyleClass().add("primary-button");
         newButton.setOnAction(event -> onNew.run());
 
-        HBox toolbar = new HBox(8, searchField, statusFilter, spacer(), refreshButton, newButton);
+        HBox toolbar = new HBox(8, searchField, statusFilter, clearFiltersButton, spacer(), refreshButton, newButton);
         toolbar.setAlignment(Pos.CENTER_LEFT);
         toolbar.getStyleClass().add("toolbar");
 
@@ -172,7 +197,9 @@ public final class TaskListController {
         actions.setAlignment(Pos.CENTER_LEFT);
         actions.getStyleClass().add("toolbar");
 
-        VBox tableCard = new VBox(12, table, actions);
+        paginationBar.update(viewModel);
+
+        VBox tableCard = new VBox(12, table, actions, paginationBar);
         tableCard.getStyleClass().add("card");
         tableCard.setMaxWidth(Double.MAX_VALUE);
         VBox.setVgrow(table, Priority.ALWAYS);
@@ -185,24 +212,28 @@ public final class TaskListController {
         root.getStyleClass().add("content");
         VBox.setVgrow(center, Priority.ALWAYS);
 
-        Timeline overdueRefresh = new Timeline(new KeyFrame(Duration.seconds(30), event -> table.refresh()));
-        overdueRefresh.setCycleCount(Animation.INDEFINITE);
-        overdueRefresh.play();
-
         onSelectionChanged(null);
     }
 
-    private void applyFilters() {
-        Task selected = selectedTask();
-        table.getItems().setAll(viewModel.visibleTasks());
-        if (selected != null) {
-            table.getItems().stream()
-                    .filter(task -> task.equals(selected))
-                    .findFirst()
-                    .ifPresent(task -> table.getSelectionModel().select(task));
+    private void clearFilters() {
+        suppressFilterEvents = true;
+        searchField.clear();
+        statusFilter.getSelectionModel().select(StatusFilter.ALL);
+        suppressFilterEvents = false;
+        searchDebounce.stop();
+        viewModel.clearFilters();
+        refresh();
+    }
+
+    private void previousPage() {
+        if (!busy && viewModel.hasPrevious()) {
+            load(viewModel.previousRequest());
         }
-        if (table.getSelectionModel().getSelectedItem() == null) {
-            onSelectionChanged(null);
+    }
+
+    private void nextPage() {
+        if (!busy && viewModel.hasNext()) {
+            load(viewModel.nextRequest());
         }
     }
 
@@ -224,8 +255,10 @@ public final class TaskListController {
         this.busy = busy;
         searchField.setDisable(busy);
         statusFilter.setDisable(busy);
+        clearFiltersButton.setDisable(busy);
         refreshButton.setDisable(busy);
         newButton.setDisable(busy);
+        paginationBar.setBusy(busy);
         updateActionState(selectedTask());
     }
 

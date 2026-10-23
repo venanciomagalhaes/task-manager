@@ -1,12 +1,20 @@
 package br.com.taskmanager.infrastructure.repositories;
 
+import br.com.taskmanager.application.queries.PageRequest;
+import br.com.taskmanager.application.queries.PageResult;
+import br.com.taskmanager.application.queries.TaskQuery;
+import br.com.taskmanager.application.queries.TaskScope;
 import br.com.taskmanager.application.repositories.TaskRepository;
 import br.com.taskmanager.domain.entities.Task;
 import br.com.taskmanager.domain.enums.TaskStatus;
 import br.com.taskmanager.infrastructure.exceptions.QueryException;
 
 import javax.sql.DataSource;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,22 +44,79 @@ public class MySqlTaskRepository implements TaskRepository {
     }
 
     @Override
-    public List<Task> getAll(boolean withTrashed) {
-        String sql = withTrashed
-                ? "SELECT * FROM tasks ORDER BY deadline;"
-                : "SELECT * FROM tasks WHERE deleted_at IS NULL ORDER BY deadline;";
-        try (Connection connection = this.dataSource.getConnection();
-             Statement statement = connection.createStatement()) {
-            try (ResultSet resultSet = statement.executeQuery(sql)) {
-                List<Task> tasks = new ArrayList<>();
-                while (resultSet.next()) {
-                    tasks.add(this.mapRow(resultSet));
+    public PageResult<Task> search(TaskQuery query, PageRequest page) {
+        List<Object> parameters = new ArrayList<>();
+        String where = buildWhere(query, parameters);
+        String sql = "SELECT * FROM tasks" + where + " ORDER BY deadline ASC, uuid ASC LIMIT ? OFFSET ?";
+
+        try (Connection connection = this.dataSource.getConnection()) {
+            long total = count(connection, where, parameters);
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                int index = bind(statement, parameters);
+                statement.setInt(index++, page.size());
+                statement.setLong(index, page.offset());
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    List<Task> tasks = new ArrayList<>();
+                    while (resultSet.next()) {
+                        tasks.add(this.mapRow(resultSet));
+                    }
+                    return new PageResult<>(tasks, total, page.page(), page.size());
                 }
-                return tasks;
             }
-        } catch (SQLException throwable) {
-            throw new QueryException("Não foi possível listar todas as tasks", throwable);
+        } catch (SQLException exception) {
+            throw new QueryException("Não foi possível consultar as tasks", exception);
         }
+    }
+
+    private String buildWhere(TaskQuery query, List<Object> parameters) {
+        StringBuilder where = new StringBuilder(" WHERE 1 = 1");
+
+        if (query.scope() == TaskScope.ACTIVE) {
+            where.append(" AND deleted_at IS NULL");
+        } else if (query.scope() == TaskScope.TRASHED) {
+            where.append(" AND deleted_at IS NOT NULL");
+        }
+
+        if (query.status() != null) {
+            where.append(" AND status = ?");
+            parameters.add(query.status().name());
+        }
+
+        if (!query.search().isBlank()) {
+            where.append(" AND (name LIKE ? ESCAPE '!' OR description LIKE ? ESCAPE '!')");
+            String pattern = likePattern(query.search());
+            parameters.add(pattern);
+            parameters.add(pattern);
+        }
+
+        return where.toString();
+    }
+
+    private String likePattern(String term) {
+        String escaped = term.trim()
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_");
+        return "%" + escaped + "%";
+    }
+
+    private long count(Connection connection, String where, List<Object> parameters) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM tasks" + where;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            bind(statement, parameters);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getLong(1);
+            }
+        }
+    }
+
+    private int bind(PreparedStatement statement, List<Object> parameters) throws SQLException {
+        int index = 1;
+        for (Object parameter : parameters) {
+            statement.setObject(index++, parameter);
+        }
+        return index;
     }
 
     @Override
@@ -110,4 +175,3 @@ public class MySqlTaskRepository implements TaskRepository {
         return timestamp == null ? null : timestamp.toInstant();
     }
 }
-

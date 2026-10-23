@@ -1,44 +1,99 @@
 package br.com.taskmanager.presentation.viewmodel;
 
+import br.com.taskmanager.application.queries.PageRequest;
+import br.com.taskmanager.application.queries.PageResult;
+import br.com.taskmanager.application.queries.TaskQuery;
+import br.com.taskmanager.application.queries.TaskScope;
 import br.com.taskmanager.domain.entities.Task;
 import br.com.taskmanager.domain.enums.TaskStatus;
 
-import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 
 public final class TaskListViewModel {
 
-    private List<Task> tasks = List.of();
-    private String search = "";
-    private TaskStatus statusFilter;
+    public static final int DEFAULT_PAGE_SIZE = 10;
 
-    public void setTasks(List<Task> tasks) {
-        this.tasks = tasks == null ? List.of() : List.copyOf(tasks);
+    private final TaskScope scope;
+    private final int pageSize;
+    private TaskQuery query;
+    private PageResult<Task> page;
+
+    public TaskListViewModel() {
+        this(TaskScope.ACTIVE);
+    }
+
+    public TaskListViewModel(TaskScope scope) {
+        this(scope, DEFAULT_PAGE_SIZE);
+    }
+
+    public TaskListViewModel(TaskScope scope, int pageSize) {
+        this.scope = scope;
+        this.pageSize = pageSize;
+        this.query = new TaskQuery("", null, scope);
+        this.page = emptyPage();
     }
 
     public void setSearch(String search) {
-        this.search = search == null ? "" : search;
+        this.query = new TaskQuery(search, this.query.status(), this.scope);
+        resetPage();
     }
 
-    public void setStatusFilter(TaskStatus statusFilter) {
-        this.statusFilter = statusFilter;
+    public void setStatus(TaskStatus status) {
+        this.query = new TaskQuery(this.query.search(), status, this.scope);
+        resetPage();
     }
 
-    public List<Task> visibleTasks() {
-        String needle = search.trim().toLowerCase(Locale.ROOT);
-        return tasks.stream()
-                .filter(task -> statusFilter == null || task.getStatus() == statusFilter)
-                .filter(task -> needle.isEmpty() || task.getName().toLowerCase(Locale.ROOT).contains(needle))
-                .sorted(Comparator.comparing(Task::getDeadline))
-                .toList();
+    public void clearFilters() {
+        this.query = new TaskQuery("", null, this.scope);
+        resetPage();
     }
 
-    public static List<Task> deletedOnly(List<Task> tasks) {
-        return tasks.stream()
-                .filter(task -> task.getDeletedAt() != null)
-                .sorted(Comparator.comparing(Task::getDeletedAt).reversed())
-                .toList();
+    public TaskQuery query() {
+        return query;
+    }
+
+    public PageRequest request() {
+        return new PageRequest(page.page(), pageSize);
+    }
+
+    public PageRequest nextRequest() {
+        return new PageRequest(page.page() + 1, pageSize);
+    }
+
+    public PageRequest previousRequest() {
+        return new PageRequest(Math.max(0, page.page() - 1), pageSize);
+    }
+
+    public void apply(PageResult<Task> result) {
+        this.page = result;
+    }
+
+    public PageResult<Task> page() {
+        return page;
+    }
+
+    public boolean hasNext() {
+        return page.hasNext();
+    }
+
+    public boolean hasPrevious() {
+        return page.hasPrevious();
+    }
+
+    public String pageLabel() {
+        return "Página " + (page.page() + 1) + " de " + Math.max(1, page.totalPages());
+    }
+
+    public String totalLabel() {
+        return page.totalElements() + (page.totalElements() == 1 ? " tarefa" : " tarefas");
+    }
+
+    private void resetPage() {
+        this.page = emptyPage();
+    }
+
+    private PageResult<Task> emptyPage() {
+        return new PageResult<>(List.of(), 0, 0, pageSize);
     }
 
     public static boolean canEdit(Task task) {

@@ -75,6 +75,17 @@
     -fx-alignment: CENTER_LEFT;
 }
 
+.pagination-bar {
+    -fx-spacing: 8;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 2 0 0 0;
+}
+
+.pagination-summary {
+    -fx-text-fill: #6b7280;
+    -fx-font-size: 12px;
+}
+
 .card {
     -fx-background-color: #ffffff;
     -fx-background-radius: 10;
