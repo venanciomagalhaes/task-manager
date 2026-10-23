@@ -41,6 +41,30 @@ public class Task {
         this.transitionTo(status);
     }
 
+    public static Task fromDatabase(
+            UUID uuid,
+            String name,
+            String description,
+            TaskStatus status,
+            Instant deadline,
+            Instant finishedAt,
+            Instant createdAt,
+            Instant updatedAt,
+            Instant deletedAt
+            ){
+        return new Task(
+                uuid,
+                name,
+                description,
+                status,
+                deadline,
+                finishedAt,
+                createdAt,
+                updatedAt,
+                deletedAt
+        );
+    }
+
     public void rename(String name) {
         ensureNotDeleted();
         this.setName(name);
