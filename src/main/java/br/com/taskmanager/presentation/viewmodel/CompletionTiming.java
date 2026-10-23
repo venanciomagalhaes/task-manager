@@ -4,8 +4,8 @@ import br.com.taskmanager.domain.entities.Task;
 
 public enum CompletionTiming {
 
-    ON_TIME("No prazo", "timing-on-time"),
-    LATE("Atrasada", "timing-late");
+    ON_TIME("No prazo", "finished-on-time"),
+    LATE("Atrasada", "finished-late");
 
     private final String label;
     private final String styleClass;

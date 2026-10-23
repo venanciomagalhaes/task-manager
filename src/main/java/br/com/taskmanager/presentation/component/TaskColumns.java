@@ -10,7 +10,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.Tooltip;
 
 import java.time.Instant;
 import java.util.function.Function;
@@ -93,19 +93,18 @@ public final class TaskColumns {
         column.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
         column.setCellFactory(ignored -> new TableCell<>() {
             private final Label date = new Label();
-            private final Label badge = new Label();
-            private final VBox content = new VBox(2, date, badge);
+            private final Tooltip tooltip = new Tooltip();
 
             {
                 setAlignment(Pos.CENTER);
-                content.setAlignment(Pos.CENTER);
+                date.setAlignment(Pos.CENTER);
                 date.getStyleClass().add("finished-date");
-                badge.getStyleClass().add("timing-badge");
             }
 
             @Override
             protected void updateItem(Task task, boolean empty) {
                 super.updateItem(task, empty);
+                date.getStyleClass().removeAll("finished-on-time", "finished-late");
                 if (empty || task == null) {
                     setText(null);
                     setGraphic(null);
@@ -117,12 +116,12 @@ public final class TaskColumns {
                     return;
                 }
                 CompletionTiming timing = CompletionTiming.of(task);
-                setText(null);
                 date.setText(converter.format(task.getFinishedAt()));
-                badge.setText(timing.label());
-                badge.getStyleClass().removeAll("timing-on-time", "timing-late");
-                badge.getStyleClass().add(timing.styleClass());
-                setGraphic(content);
+                date.getStyleClass().add(timing.styleClass());
+                tooltip.setText(timing.label());
+                date.setTooltip(tooltip);
+                setText(null);
+                setGraphic(date);
             }
         });
         column.setPrefWidth(190);

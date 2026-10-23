@@ -57,9 +57,9 @@ class CompletionTimingTest {
     @DisplayName("rótulos e classes de estilo")
     void rotulosEClasses() {
         assertEquals("No prazo", CompletionTiming.ON_TIME.label());
-        assertEquals("timing-on-time", CompletionTiming.ON_TIME.styleClass());
+        assertEquals("finished-on-time", CompletionTiming.ON_TIME.styleClass());
         assertEquals("Atrasada", CompletionTiming.LATE.label());
-        assertEquals("timing-late", CompletionTiming.LATE.styleClass());
+        assertEquals("finished-late", CompletionTiming.LATE.styleClass());
     }
 
     private Task completedTask(Instant finishedAt) {
