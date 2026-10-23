@@ -8,6 +8,7 @@ import br.com.taskmanager.domain.entities.Task;
 import br.com.taskmanager.domain.enums.TaskStatus;
 import br.com.taskmanager.presentation.component.TaskColumns;
 import br.com.taskmanager.presentation.component.TaskDetailPane;
+import br.com.taskmanager.presentation.component.TaskRows;
 import br.com.taskmanager.presentation.service.AlertService;
 import br.com.taskmanager.presentation.service.FxRunner;
 import br.com.taskmanager.presentation.util.InstantConverter;
@@ -136,7 +137,7 @@ public final class TaskListController {
         table.getSelectionModel().selectedItemProperty().addListener(
                 (observable, oldValue, newValue) -> onSelectionChanged(newValue));
         table.setRowFactory(ignored -> {
-            TableRow<Task> row = new TableRow<>();
+            TableRow<Task> row = TaskRows.create();
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
                     onEdit.accept(row.getItem());

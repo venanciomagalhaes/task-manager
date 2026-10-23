@@ -268,8 +268,24 @@
     -fx-background-color: #ffffff;
 }
 
-.table-row-cell:selected {
+.table-row-cell.row-pending {
+    -fx-background-color: #fffbeb;
+}
+
+.table-row-cell.row-in-progress {
     -fx-background-color: #eff6ff;
+}
+
+.table-row-cell.row-completed {
+    -fx-background-color: #f0fdf4;
+}
+
+.table-row-cell.row-canceled {
+    -fx-background-color: #f9fafb;
+}
+
+.table-row-cell:filled:selected {
+    -fx-background-color: #dbeafe;
 }
 
 .table-row-cell:selected .text {

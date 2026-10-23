@@ -5,6 +5,7 @@ import br.com.taskmanager.application.usecases.RestoreTaskUseCase;
 import br.com.taskmanager.domain.entities.Task;
 import br.com.taskmanager.presentation.component.TaskColumns;
 import br.com.taskmanager.presentation.component.TaskDetailPane;
+import br.com.taskmanager.presentation.component.TaskRows;
 import br.com.taskmanager.presentation.service.AlertService;
 import br.com.taskmanager.presentation.service.FxRunner;
 import br.com.taskmanager.presentation.util.InstantConverter;
@@ -90,6 +91,7 @@ public final class TrashController {
         );
         table.setPlaceholder(new Label("A lixeira está vazia."));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        table.setRowFactory(ignored -> TaskRows.create());
         table.getSelectionModel().selectedItemProperty().addListener(
                 (observable, oldValue, newValue) -> onSelectionChanged(newValue));
 
